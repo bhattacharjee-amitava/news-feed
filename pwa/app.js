@@ -129,10 +129,16 @@ function applyFilter(query) {
     const q     = query.trim().toLowerCase();
     const cards = [...document.querySelectorAll('.card')];
     if (!q) { cards.forEach(c => c.style.display = ''); return; }
-    const srcMatch = cards.some(c => c.dataset.source.includes(q));
+
+    // Check each word individually against source names so that
+    // "News from NDTV source" correctly extracts "ndtv" as the source token
+    const words    = q.split(/\W+/).filter(w => w.length >= 2);
+    const srcToken = words.find(w => cards.some(c => c.dataset.source.includes(w))) || null;
+
     cards.forEach(c => {
-        c.style.display =
-            (srcMatch ? c.dataset.source : c.dataset.title).includes(q) ? '' : 'none';
+        c.style.display = srcToken
+            ? (c.dataset.source.includes(srcToken) ? '' : 'none')
+            : (c.dataset.title.includes(q) ? '' : 'none');
     });
 }
 

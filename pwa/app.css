@@ -45,6 +45,15 @@ html, body {
 
 #sentinel { height: 1px; }
 
+#search-not-found {
+  padding: 48px 24px;
+  text-align: center;
+  color: var(--secondary);
+  font-size: 15px;
+  font-family: ui-monospace, monospace;
+}
+#search-not-found.hidden { display: none; }
+
 /* ── Loading ──────────────────────────────────────────────── */
 #loading {
   padding: 48px 24px;

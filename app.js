@@ -2,7 +2,7 @@
 
 const BATCH_SIZE = 100;
 const POLL_MS    = 60_000;
-const MAX_AGE_MS = 6 * 86_400_000;
+const MAX_AGE_MS = 14 * 86_400_000;
 
 let allIds       = new Set();
 let displayedIds = new Set();

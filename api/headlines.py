@@ -12,8 +12,8 @@ import feedparser
 import requests
 
 TIMEOUT      = 8
-MAX_PER_SRC  = 15
-MAX_AGE_SECS = 6 * 86400
+MAX_PER_SRC  = 30
+MAX_AGE_SECS = 14 * 86400
 
 RSS_HEADERS    = {'User-Agent': 'Mozilla/5.0 (compatible; WorldSignalFeed/1.0)'}
 REDDIT_HEADERS = {'User-Agent': 'script:WorldSignalFeed:v1.0'}

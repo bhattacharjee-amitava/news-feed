@@ -1,2 +1,11 @@
+[project]
+name = "world-signal-feed"
+version = "1.0.0"
+requires-python = ">=3.12"
+dependencies = [
+    "feedparser>=6.0.0",
+    "requests>=2.28.0",
+]
+
 [tool.vercel]
 entrypoint = "api.headlines:handler"

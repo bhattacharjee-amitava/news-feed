@@ -235,14 +235,21 @@ def serve_file(h, rel_path: str):
     path = os.path.join(_ROOT, rel_path.lstrip('/'))
     if not os.path.isfile(path):
         path = os.path.join(_ROOT, 'index.html')   # SPA fallback
-    ext  = os.path.splitext(path)[1].lower()
-    mime = MIME.get(ext, 'application/octet-stream')
+    ext      = os.path.splitext(path)[1].lower()
+    mime     = MIME.get(ext, 'application/octet-stream')
+    basename = os.path.basename(path)
+    # Never cache sw.js or index.html so updates are picked up immediately
+    no_cache = basename in ('sw.js', 'index.html')
     try:
         with open(path, 'rb') as f:
             body = f.read()
         h.send_response(200)
         h.send_header('Content-Type',   mime)
         h.send_header('Content-Length', str(len(body)))
+        if no_cache:
+            h.send_header('Cache-Control', 'no-store')
+        else:
+            h.send_header('Cache-Control', 'public, max-age=3600')
         h.end_headers()
         h.wfile.write(body)
     except Exception:

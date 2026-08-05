@@ -205,6 +205,8 @@ document.getElementById('btn-search').addEventListener('click', () =>
 document.getElementById('search-input').addEventListener('input',  e => applyFilter(e.target.value));
 document.getElementById('search-input').addEventListener('keydown', e => {
     if (e.key === 'Enter') {
+        const q = e.target.value.trim();
+        if (q) track('search', { query: q, lang: currentLang });
         closeSearch(true);
     }
     if (e.key === 'Escape') closeSearch();
@@ -258,7 +260,10 @@ document.getElementById('lang-btn').addEventListener('click', e => {
 document.querySelectorAll('.lang-opt').forEach(btn => {
     btn.addEventListener('click', () => {
         document.getElementById('lang-dropdown').classList.add('hidden');
-        if (btn.dataset.lang !== currentLang) switchLang(btn.dataset.lang);
+        if (btn.dataset.lang !== currentLang) {
+        track('language_switch', { lang: btn.dataset.lang });
+        switchLang(btn.dataset.lang);
+    }
     });
 });
 document.addEventListener('click', () =>
@@ -268,6 +273,7 @@ document.addEventListener('click', () =>
 // ── Modal ──────────────────────────────────────────────────
 
 function openModal(h) {
+    track('article_click', { title: h.title, source: h.source, lang: currentLang });
     document.getElementById('modal-source').textContent = h.source;
     document.getElementById('modal-age').textContent    = timeAgo(h.published);
     document.getElementById('modal-title').textContent  = h.title;
@@ -337,6 +343,24 @@ document.getElementById('install-btn').addEventListener('click', async () => {
     deferredInstall = null;
     hideInstallBanner();
 });
+
+// ── Analytics ──────────────────────────────────────────────
+
+const _sessionStart = Date.now();
+
+function track(name, data) {
+    window.va?.('event', { name, data });
+}
+
+// Time spent — fires when user leaves or hides the tab
+function trackSession() {
+    const secs = Math.round((Date.now() - _sessionStart) / 1000);
+    track('session_end', { seconds: secs, lang: currentLang });
+}
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') trackSession();
+});
+window.addEventListener('pagehide', trackSession);
 
 // ── Boot ───────────────────────────────────────────────────
 

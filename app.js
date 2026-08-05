@@ -180,7 +180,17 @@ document.getElementById('btn-search').addEventListener('click', () =>
 );
 document.getElementById('search-input').addEventListener('input',  e => applyFilter(e.target.value));
 document.getElementById('search-input').addEventListener('keydown', e => {
-    if (e.key === 'Enter')  { const q = e.target.value.trim(); if (q) fetchHeadlines(q); }
+    if (e.key === 'Enter') {
+        const q = e.target.value.trim();
+        if (!q) return;
+        const intent = parseIntent(q);
+        if (intent.type === 'source') {
+            // Source filter already applied while typing — just close the bar
+            closeSearch();
+        } else {
+            fetchHeadlines(q);
+        }
+    }
     if (e.key === 'Escape') closeSearch();
 });
 

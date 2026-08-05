@@ -130,12 +130,16 @@ def fetch_rss(source: dict) -> list:
             pub = parse_pub(entry)
             if (now - pub.timestamp()) > MAX_AGE_SECS:
                 continue
+            desc = (entry.get('summary') or entry.get('description') or '').strip()
+            if len(desc) > 300:
+                desc = desc[:300].rsplit(' ', 1)[0] + '…'
             out.append({
                 'id': make_id(url), 'title': title, 'url': url,
                 'source': source['name'], 'category': source.get('category', 'WORLD'),
                 'authority': source.get('authority', 5),
                 'published': pub.isoformat(), 'published_ts': pub.timestamp(),
                 'cross_source_count': 1,
+                'description': desc,
                 'score': compute_score(source.get('authority', 5), pub.timestamp(), now),
             })
         return out
@@ -170,6 +174,7 @@ def fetch_reddit(source: dict) -> list:
                 'published': datetime.fromtimestamp(pub_ts).isoformat(),
                 'published_ts': pub_ts,
                 'cross_source_count': min(5, max(1, p.get('num_comments', 0) // 200 + 1)),
+                'description': p.get('selftext', '')[:300] or '',
                 'score': compute_score(authority, pub_ts, now),
             })
         return out

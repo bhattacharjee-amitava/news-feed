@@ -1,20 +1,21 @@
 'use strict';
 
-const BATCH_SIZE    = 100;
-const POLL_MS       = 60_000;
-const MAX_AGE_MS    = 6 * 86_400_000;
+const BATCH_SIZE = 100;
+const POLL_MS    = 60_000;
+const MAX_AGE_MS = 6 * 86_400_000;
 
-let allIds      = new Set();
-let displayedIds= new Set();
-let pending     = [];
-let paused      = true;
-let searchActive= false;
-let fetchCount  = 0;
+let allIds       = new Set();
+let displayedIds = new Set();
+let pending      = [];
+let searchActive = false;
+let fetchCount   = 0;
 
 // ── Helpers ────────────────────────────────────────────────
 
 function esc(s) {
-    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    return String(s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 function timeAgo(iso) {
@@ -27,16 +28,21 @@ function timeAgo(iso) {
     return `${Math.floor(h / 24)}d ago`;
 }
 
-// ── Card creation ──────────────────────────────────────────
+function setStatus(msg) {
+    document.getElementById('last-fetch').textContent = msg;
+    document.getElementById('shown-count').textContent = `${displayedIds.size} shown`;
+}
+
+// ── Card ───────────────────────────────────────────────────
 
 function makeCard(h) {
     const score = Math.round((h.score || 0) * 100);
     const cross = h.cross_source_count > 1 ? ` · +${h.cross_source_count - 1}` : '';
     const div   = document.createElement('div');
-    div.className     = 'card';
-    div.dataset.id    = h.id;
-    div.dataset.source= (h.source || '').toLowerCase();
-    div.dataset.title = (h.title  || '').toLowerCase();
+    div.className      = 'card';
+    div.dataset.id     = h.id;
+    div.dataset.source = (h.source || '').toLowerCase();
+    div.dataset.title  = (h.title  || '').toLowerCase();
     div.innerHTML = `
       <div class="card-meta">
         <span class="source-tag">${esc(h.source)}</span>
@@ -45,14 +51,15 @@ function makeCard(h) {
       </div>
       <div class="headline">${esc(h.title)}</div>
       <div class="score-bar"><div class="score-fill" style="width:${score}%"></div></div>`;
-    div.addEventListener('click', () => window.open(h.url, '_blank', 'noopener'));
+    div.addEventListener('click', () => openModal(h));
     return div;
 }
 
-// ── Render batch ───────────────────────────────────────────
+// ── Render ─────────────────────────────────────────────────
 
 function renderBatch(batch) {
     const feed    = document.getElementById('feed');
+    const sentinel= document.getElementById('sentinel');
     const loading = document.getElementById('loading');
     if (loading) loading.remove();
 
@@ -61,25 +68,28 @@ function renderBatch(batch) {
         frag.appendChild(makeCard(h));
         displayedIds.add(h.id);
     }
-    feed.insertBefore(frag, feed.firstChild);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    // Insert before sentinel so sentinel stays at bottom
+    feed.insertBefore(frag, sentinel);
 
-    if (searchActive) {
-        applyFilter(document.getElementById('search-input').value);
-    }
+    if (searchActive) applyFilter(document.getElementById('search-input').value);
+    setStatus(`Last fetch: ${new Date().toLocaleTimeString()}`);
 }
-
-// ── Deliver next batch from pending ───────────────────────
 
 function deliverBatch() {
-    if (!pending.length) { paused = true; updateUI(); return; }
+    if (!pending.length) return;
     const batch = pending.splice(0, BATCH_SIZE);
     renderBatch(batch);
-    paused = true;
-    updateUI();
 }
 
-// ── Fetch from API ─────────────────────────────────────────
+// ── Infinite scroll ────────────────────────────────────────
+
+const observer = new IntersectionObserver(entries => {
+    if (entries[0].isIntersecting && pending.length > 0) {
+        deliverBatch();
+    }
+}, { rootMargin: '200px' });
+
+// ── Fetch ──────────────────────────────────────────────────
 
 async function fetchHeadlines(q) {
     const url = q ? `/api/headlines?q=${encodeURIComponent(q)}` : '/api/headlines';
@@ -90,7 +100,6 @@ async function fetchHeadlines(q) {
         const cutoff = Date.now() - MAX_AGE_MS;
 
         if (q) {
-            // Search results — render directly, bypass batch
             const fresh = data.filter(h => new Date(h.published).getTime() > cutoff);
             if (fresh.length) renderBatch(fresh);
             setStatus(`${fresh.length} results for "${q}"`);
@@ -104,12 +113,12 @@ async function fetchHeadlines(q) {
             fetchCount++;
             if (fetchCount === 1 && pending.length) {
                 deliverBatch();
+                observer.observe(document.getElementById('sentinel'));
             } else {
-                updateUI();
                 setStatus(`Last fetch: ${new Date().toLocaleTimeString()}`);
             }
         }
-    } catch (e) {
+    } catch {
         setStatus('Fetch error — will retry');
     }
 }
@@ -122,17 +131,16 @@ function applyFilter(query) {
     if (!q) { cards.forEach(c => c.style.display = ''); return; }
     const srcMatch = cards.some(c => c.dataset.source.includes(q));
     cards.forEach(c => {
-        c.style.display = (srcMatch ? c.dataset.source : c.dataset.title).includes(q)
-            ? '' : 'none';
+        c.style.display =
+            (srcMatch ? c.dataset.source : c.dataset.title).includes(q) ? '' : 'none';
     });
 }
 
-// ── Search UI ──────────────────────────────────────────────
+// ── Search ─────────────────────────────────────────────────
 
 function openSearch() {
     searchActive = true;
     document.getElementById('search-bar').classList.remove('hidden');
-    document.getElementById('paused-banner').classList.add('hidden');
     document.getElementById('btn-search').classList.add('active');
     const inp = document.getElementById('search-input');
     inp.value = '';
@@ -144,66 +152,48 @@ function closeSearch() {
     document.getElementById('search-bar').classList.add('hidden');
     document.getElementById('btn-search').classList.remove('active');
     applyFilter('');
-    updateUI();
 }
 
-// ── UI updates ─────────────────────────────────────────────
+document.getElementById('btn-search').addEventListener('click', () =>
+    searchActive ? closeSearch() : openSearch()
+);
+document.getElementById('search-input').addEventListener('input',  e => applyFilter(e.target.value));
+document.getElementById('search-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter')  { const q = e.target.value.trim(); if (q) fetchHeadlines(q); }
+    if (e.key === 'Escape') closeSearch();
+});
 
-function updateUI() {
-    const banner = document.getElementById('paused-banner');
-    const count  = document.getElementById('buffer-count');
-    const btnR   = document.getElementById('btn-resume');
+// ── Modal ──────────────────────────────────────────────────
 
-    if (paused && !searchActive) {
-        banner.classList.remove('hidden');
-        count.textContent = `${pending.length} buffered`;
-        btnR.querySelector('span').textContent = pending.length ? `Load ${Math.min(pending.length, BATCH_SIZE)}` : 'Resume';
-    } else {
-        banner.classList.add('hidden');
-    }
-
-    document.getElementById('shown-count').textContent = `${displayedIds.size} shown`;
+function openModal(h) {
+    document.getElementById('modal-source').textContent = h.source;
+    document.getElementById('modal-age').textContent    = timeAgo(h.published);
+    document.getElementById('modal-title').textContent  = h.title;
+    const desc = document.getElementById('modal-desc');
+    desc.textContent  = h.description || '';
+    desc.style.display = h.description ? '' : 'none';
+    document.getElementById('modal-link').href = h.url;
+    document.getElementById('modal-overlay').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
 }
 
-function setStatus(msg) {
-    document.getElementById('last-fetch').textContent = msg;
+function closeModal() {
+    document.getElementById('modal-overlay').classList.add('hidden');
+    document.body.style.overflow = '';
 }
+
+document.getElementById('modal-close').addEventListener('click', closeModal);
+document.getElementById('modal-overlay').addEventListener('click', e => {
+    if (e.target === document.getElementById('modal-overlay')) closeModal();
+});
 
 // ── Keyboard (desktop) ─────────────────────────────────────
 
 document.addEventListener('keydown', e => {
-    if (e.target.tagName === 'INPUT') {
-        if (e.key === 'Escape') { closeSearch(); e.preventDefault(); }
-        if (e.key === 'Enter')  { fetchHeadlines(e.target.value.trim()); }
-        return;
-    }
-    if (e.key === '/')  { e.preventDefault(); openSearch(); }
-    if (e.key === 'r' || e.key === 'R') { doResume(); }
-    if (e.key === 'q' || e.key === 'Q') { window.close(); }
-});
-
-// ── Button handlers ────────────────────────────────────────
-
-function doResume() {
-    if (pending.length) { deliverBatch(); }
-    else { paused = false; updateUI(); }
-}
-
-document.getElementById('btn-search').addEventListener('click', () => {
-    searchActive ? closeSearch() : openSearch();
-});
-document.getElementById('btn-resume').addEventListener('click', doResume);
-document.getElementById('btn-quit').addEventListener('click', () => window.close());
-
-document.getElementById('search-input').addEventListener('input', e => {
-    applyFilter(e.target.value);
-});
-document.getElementById('search-input').addEventListener('keydown', e => {
-    if (e.key === 'Enter') {
-        const q = e.target.value.trim();
-        if (q) fetchHeadlines(q);
-    }
-    if (e.key === 'Escape') closeSearch();
+    if (e.target.tagName === 'INPUT') return;
+    if (e.key === '/')       { e.preventDefault(); openSearch(); }
+    if (e.key === 'Escape')  closeModal();
+    if (e.key === 'q' || e.key === 'Q') window.close();
 });
 
 // ── Service worker ─────────────────────────────────────────

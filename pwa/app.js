@@ -151,10 +151,15 @@ function applyFilter(query) {
     // Step 1: exact phrase match in title
     let matched = cards.filter(c => c.dataset.title.includes(q));
 
-    // Step 2: if nothing, match any individual word in title (strip punctuation)
+    // Step 2: if nothing, match meaningful individual words in title
     if (!matched.length) {
-        const words = q.split(/\W+/).filter(w => w.length >= 2);
-        matched = cards.filter(c => words.some(w => c.dataset.title.includes(w)));
+        const NOISE = new Set(['headlines','news','articles','stories','latest','recent',
+            'show','from','about','give','find','get','the','and','for','with','that',
+            'this','just','only','all','any','some','more','most','have','been','will']);
+        const words = q.split(/\W+/).filter(w => w.length >= 4 && !NOISE.has(w));
+        if (words.length) {
+            matched = cards.filter(c => words.some(w => c.dataset.title.includes(w)));
+        }
     }
 
     // Step 3: nothing locally — silently fetch live in background

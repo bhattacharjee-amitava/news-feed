@@ -141,13 +141,27 @@ function applyFilter(query) {
     const q = query.trim().toLowerCase();
     activeFilter = q;
     const cards = [...document.querySelectorAll('.card')];
+    document.getElementById('search-not-found').classList.add('hidden');
     if (!q) { cards.forEach(c => c.style.display = ''); return; }
-    // Same logic as Python TUI: if query matches any source name → source filter; else → title filter
-    const sourceMatch = cards.some(c => c.dataset.source.includes(q));
-    cards.forEach(c => {
-        const hit = sourceMatch ? c.dataset.source.includes(q) : c.dataset.title.includes(q);
-        c.style.display = hit ? '' : 'none';
-    });
+
+    // Step 1: exact phrase match in title
+    let matched = cards.filter(c => c.dataset.title.includes(q));
+
+    // Step 2: if nothing, match any individual word in title
+    if (!matched.length) {
+        const words = q.split(/\s+/).filter(w => w.length > 0);
+        matched = cards.filter(c => words.some(w => c.dataset.title.includes(w)));
+    }
+
+    // Step 3: nothing at all — show "Not found"
+    if (!matched.length) {
+        cards.forEach(c => c.style.display = 'none');
+        document.getElementById('search-not-found').classList.remove('hidden');
+        return;
+    }
+
+    const matchedSet = new Set(matched);
+    cards.forEach(c => c.style.display = matchedSet.has(c) ? '' : 'none');
 }
 
 // ── Search ─────────────────────────────────────────────────
@@ -166,7 +180,10 @@ function closeSearch(keepFilter = false) {
     searchActive = false;
     document.getElementById('search-bar').classList.add('hidden');
     document.getElementById('btn-search').classList.remove('active');
-    if (!keepFilter) applyFilter('');
+    if (!keepFilter) {
+        applyFilter('');
+        document.getElementById('search-not-found').classList.add('hidden');
+    }
 }
 
 document.getElementById('btn-search').addEventListener('click', () =>
@@ -175,15 +192,7 @@ document.getElementById('btn-search').addEventListener('click', () =>
 document.getElementById('search-input').addEventListener('input',  e => applyFilter(e.target.value));
 document.getElementById('search-input').addEventListener('keydown', e => {
     if (e.key === 'Enter') {
-        const q = e.target.value.trim();
-        if (!q) return;
-        const visible = [...document.querySelectorAll('.card')]
-            .some(c => c.style.display !== 'none');
-        if (visible) {
-            closeSearch(true); // local filter matched — keep it, close bar
-        } else {
-            fetchHeadlines(q); // nothing matched locally — fetch from API
-        }
+        closeSearch(true); // filter already applied while typing — just close bar
     }
     if (e.key === 'Escape') closeSearch();
 });

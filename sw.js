@@ -1,4 +1,4 @@
-const CACHE = 'wsf-v1';
+const CACHE = 'wsf-v2';
 const SHELL  = ['/', '/app.css', '/app.js', '/manifest.json', '/icon.svg'];
 
 self.addEventListener('install', e => {

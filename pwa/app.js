@@ -58,7 +58,7 @@ function makeCard(h) {
 
 // ── Render ─────────────────────────────────────────────────
 
-function renderBatch(batch) {
+function renderBatch(batch, prepend = false) {
     const feed    = document.getElementById('feed');
     const sentinel= document.getElementById('sentinel');
     const loading = document.getElementById('loading');
@@ -69,8 +69,13 @@ function renderBatch(batch) {
         frag.appendChild(makeCard(h));
         displayedIds.add(h.id);
     }
-    // Insert before sentinel so sentinel stays at bottom
-    feed.insertBefore(frag, sentinel);
+
+    if (prepend) {
+        const firstCard = feed.querySelector('.card');
+        feed.insertBefore(frag, firstCard || sentinel);
+    } else {
+        feed.insertBefore(frag, sentinel);
+    }
 
     if (activeFilter) applyFilter(activeFilter);
     setStatus(`Last fetch: ${new Date().toLocaleTimeString()}`);
@@ -110,11 +115,17 @@ async function fetchHeadlines(q) {
                 !allIds.has(h.id) && new Date(h.published).getTime() > cutoff
             );
             novel.forEach(h => allIds.add(h.id));
-            pending.push(...novel);
             fetchCount++;
-            if (fetchCount === 1 && pending.length) {
-                deliverBatch();
-                observer.observe(document.getElementById('sentinel'));
+            if (fetchCount === 1) {
+                pending.push(...novel);
+                if (pending.length) {
+                    deliverBatch();
+                    observer.observe(document.getElementById('sentinel'));
+                }
+            } else if (novel.length) {
+                // Auto-refresh: new articles go to the top immediately
+                renderBatch(novel, true);
+                setStatus(`${novel.length} new · ${new Date().toLocaleTimeString()}`);
             } else {
                 setStatus(`Last fetch: ${new Date().toLocaleTimeString()}`);
             }

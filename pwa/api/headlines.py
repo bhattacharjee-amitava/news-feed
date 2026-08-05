@@ -183,6 +183,18 @@ def fetch_reddit(source: dict) -> list:
         return []
 
 
+_cache: dict = {'ts': 0.0, 'data': []}
+CACHE_TTL = 60  # seconds — re-fetch RSS at most once per minute
+
+def fetch_all_cached() -> list:
+    now = time.time()
+    if _cache['data'] and (now - _cache['ts']) < CACHE_TTL:
+        return _cache['data']
+    data = fetch_all()
+    _cache['ts'] = now
+    _cache['data'] = data
+    return data
+
 def fetch_all() -> list:
     seen, out = set(), []
     with ThreadPoolExecutor(max_workers=12) as ex:
@@ -271,7 +283,7 @@ class handler(BaseHTTPRequestHandler):
 
         if p == '/api/headlines':
             q    = (parse_qs(parsed.query).get('q') or [None])[0]
-            data = search_news(q) if q else fetch_all()
+            data = search_news(q) if q else fetch_all_cached()
             body = json.dumps(data, default=str).encode()
             self.send_response(200)
             self.send_header('Content-Type',   'application/json')

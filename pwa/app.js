@@ -1,7 +1,7 @@
 'use strict';
 
 const BATCH_SIZE = 100;
-const POLL_MS    = 60_000;
+const POLL_MS    = 5_000;
 const MAX_AGE_MS = 14 * 86_400_000;
 
 let allIds       = new Set();
@@ -215,7 +215,9 @@ async function fetchLive(q) {
             document.getElementById('search-not-found').classList.remove('hidden');
             return;
         }
-        renderBatch(data, true, true); // true = prepend, true = live
+        renderBatch(data, true, true);
+        // Make live cards visible — applyFilter may have hidden everything
+        document.querySelectorAll('.card[data-live]').forEach(c => c.style.display = '');
         setStatus(`${data.length} results for "${q}"`);
     } catch {
         document.getElementById('search-not-found').textContent = 'Not found!';

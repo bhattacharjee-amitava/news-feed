@@ -254,11 +254,9 @@ window.addEventListener('appinstalled', () => {
 document.getElementById('install-btn').addEventListener('click', async () => {
     if (!deferredInstall) return;
     deferredInstall.prompt();
-    const { outcome } = await deferredInstall.userChoice;
-    if (outcome === 'accepted') {
-        deferredInstall = null;
-        document.getElementById('install-banner').classList.add('hidden');
-    }
+    await deferredInstall.userChoice;
+    deferredInstall = null;
+    document.getElementById('install-banner').classList.add('hidden');
 });
 
 // ── Boot ───────────────────────────────────────────────────

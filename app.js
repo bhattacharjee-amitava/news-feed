@@ -125,20 +125,35 @@ async function fetchHeadlines(q) {
 
 // ── Filter ─────────────────────────────────────────────────
 
+const SOURCE_TRIGGERS = new Set(['from', 'source', 'by', 'channel', 'publisher', 'outlet', 'site']);
+const STOP_WORDS      = new Set([
+    'show', 'me', 'news', 'only', 'just', 'get', 'find', 'give', 'the', 'a', 'an',
+    'and', 'or', 'in', 'of', 'headlines', 'articles', 'stories', 'about', 'on',
+    'all', 'latest', 'recent', 'today', 'want', 'please', 'can', 'you', 'i', 'we',
+    'us', 'for', 'with', 'that', 'this', 'is', 'are',
+]);
+
+function parseIntent(query) {
+    const words = query.toLowerCase().split(/\W+/).filter(w => w);
+    // If query contains a source-trigger word, extract the non-noise token as source filter
+    if (words.some(w => SOURCE_TRIGGERS.has(w))) {
+        const noise  = new Set([...SOURCE_TRIGGERS, ...STOP_WORDS]);
+        const tokens = words.filter(w => !noise.has(w) && w.length >= 2);
+        if (tokens.length) return { type: 'source', value: tokens[0] };
+    }
+    return { type: 'keyword', value: query.toLowerCase() };
+}
+
 function applyFilter(query) {
-    const q     = query.trim().toLowerCase();
+    const q     = query.trim();
     const cards = [...document.querySelectorAll('.card')];
     if (!q) { cards.forEach(c => c.style.display = ''); return; }
 
-    // Check each word individually against source names so that
-    // "News from NDTV source" correctly extracts "ndtv" as the source token
-    const words    = q.split(/\W+/).filter(w => w.length >= 2);
-    const srcToken = words.find(w => cards.some(c => c.dataset.source.includes(w))) || null;
-
+    const intent = parseIntent(q);
     cards.forEach(c => {
-        c.style.display = srcToken
-            ? (c.dataset.source.includes(srcToken) ? '' : 'none')
-            : (c.dataset.title.includes(q) ? '' : 'none');
+        c.style.display = intent.type === 'source'
+            ? (c.dataset.source.includes(intent.value) ? '' : 'none')
+            : (c.dataset.title.includes(intent.value) ? '' : 'none');
     });
 }
 

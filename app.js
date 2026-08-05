@@ -58,7 +58,7 @@ function makeCard(h) {
 
 // ── Render ─────────────────────────────────────────────────
 
-function renderBatch(batch, prepend = false) {
+function renderBatch(batch, prepend = false, live = false) {
     const feed    = document.getElementById('feed');
     const sentinel= document.getElementById('sentinel');
     const loading = document.getElementById('loading');
@@ -66,7 +66,9 @@ function renderBatch(batch, prepend = false) {
 
     const frag = document.createDocumentFragment();
     for (const h of batch) {
-        frag.appendChild(makeCard(h));
+        const card = makeCard(h);
+        if (live) card.dataset.live = '1';
+        frag.appendChild(card);
         displayedIds.add(h.id);
     }
 
@@ -140,6 +142,8 @@ async function fetchHeadlines(q) {
 function applyFilter(query) {
     const q = query.trim().toLowerCase();
     activeFilter = q;
+    // Remove any previously live-fetched cards before each new search
+    document.querySelectorAll('.card[data-live]').forEach(c => c.remove());
     const cards = [...document.querySelectorAll('.card')];
     document.getElementById('search-not-found').classList.add('hidden');
     if (!q) { cards.forEach(c => c.style.display = ''); return; }
@@ -211,7 +215,7 @@ async function fetchLive(q) {
             document.getElementById('search-not-found').classList.remove('hidden');
             return;
         }
-        renderBatch(data, true);
+        renderBatch(data, true, true); // true = prepend, true = live
         setStatus(`${data.length} results for "${q}"`);
     } catch {
         document.getElementById('search-not-found').textContent = 'Not found!';

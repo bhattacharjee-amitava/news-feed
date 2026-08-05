@@ -196,7 +196,7 @@ def fetch_all() -> list:
                         out.append(h)
             except Exception:
                 pass
-    out.sort(key=lambda h: h['score'], reverse=True)
+    out.sort(key=lambda h: h['published_ts'], reverse=True)
     return out
 
 

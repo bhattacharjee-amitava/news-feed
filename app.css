@@ -36,6 +36,49 @@ html, body {
 }
 .strip-dot { color: var(--border); }
 
+/* ── Language switcher ────────────────────────────────────── */
+#lang-wrap {
+  position: relative;
+  margin-left: auto;
+}
+#lang-btn {
+  background: none;
+  border: 0.5px solid var(--muted);
+  border-radius: 4px;
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 700;
+  font-family: ui-monospace, monospace;
+  letter-spacing: 0.06em;
+  padding: 3px 7px;
+  cursor: pointer;
+}
+#lang-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  background: #111a28;
+  border: 0.5px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  z-index: 50;
+  min-width: 140px;
+}
+#lang-dropdown.hidden { display: none; }
+.lang-opt {
+  display: block;
+  width: 100%;
+  background: none;
+  border: none;
+  color: var(--text);
+  font-size: 13px;
+  padding: 10px 14px;
+  text-align: left;
+  cursor: pointer;
+}
+.lang-opt:hover { background: var(--card); }
+.lang-opt.active { color: var(--accent); }
+
 /* ── Feed ─────────────────────────────────────────────────── */
 #feed {
   padding-top: 38px;

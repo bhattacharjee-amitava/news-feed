@@ -183,23 +183,42 @@ def fetch_reddit(source: dict) -> list:
         return []
 
 
-_cache: dict = {'ts': 0.0, 'data': []}
-CACHE_TTL = 60  # seconds — re-fetch RSS at most once per minute
+BN_SOURCES = [
+    {"name": "BBC Bangla",       "url": "https://feeds.bbci.co.uk/bengali/rss.xml",                         "category": "GEO-POLITICAL", "authority": 10},
+    {"name": "Prothom Alo",      "url": "https://www.prothomalo.com/feed/",                                  "category": "GEO-POLITICAL", "authority": 9},
+    {"name": "Anandabazar",      "url": "https://www.anandabazar.com/rss/",                                  "category": "GEO-POLITICAL", "authority": 9},
+    {"name": "Sangbad Pratidin", "url": "https://www.sangbadpratidin.in/feed/",                              "category": "GEO-POLITICAL", "authority": 8},
+    {"name": "Ei Samay",         "url": "https://eisamay.com/feeds/",                                       "category": "GEO-POLITICAL", "authority": 8},
+    {"name": "ABP Ananda",       "url": "https://bengali.abplive.com/feeds",                                 "category": "GEO-POLITICAL", "authority": 8},
+    {"name": "News18 Bangla",    "url": "https://bengali.news18.com/commonfeeds/v1/bng/rss/news18-bengali.xml","category": "GEO-POLITICAL","authority": 8},
+    {"name": "Zee 24 Ghanta",    "url": "https://zeenews.india.com/bengali/rss/all-news.xml",               "category": "GEO-POLITICAL", "authority": 8},
+    {"name": "Jugantor",         "url": "https://www.jugantor.com/feed/rss.xml",                            "category": "GEO-POLITICAL", "authority": 8},
+    {"name": "Daily Ittefaq",    "url": "https://www.ittefaq.com.bd/feed",                                  "category": "GEO-POLITICAL", "authority": 8},
+    {"name": "Dainik Statesman", "url": "https://www.dainikstatesman.com/feed/",                            "category": "GEO-POLITICAL", "authority": 7},
+    {"name": "Kaler Kantho",     "url": "https://www.kalerkantho.com/rss.xml",                              "category": "GEO-POLITICAL", "authority": 8},
+]
 
-def fetch_all_cached() -> list:
+_cache: dict = {'en': {'ts': 0.0, 'data': []}, 'bn': {'ts': 0.0, 'data': []}}
+CACHE_TTL = 60
+
+def fetch_all_cached(lang: str = 'en') -> list:
     now = time.time()
-    if _cache['data'] and (now - _cache['ts']) < CACHE_TTL:
-        return _cache['data']
-    data = fetch_all()
-    _cache['ts'] = now
-    _cache['data'] = data
+    c = _cache[lang]
+    if c['data'] and (now - c['ts']) < CACHE_TTL:
+        return c['data']
+    sources = BN_SOURCES if lang == 'bn' else SOURCES
+    data = fetch_all(sources)
+    c['ts'] = now
+    c['data'] = data
     return data
 
-def fetch_all() -> list:
+def fetch_all(sources=None) -> list:
+    if sources is None:
+        sources = SOURCES
     seen, out = set(), []
     with ThreadPoolExecutor(max_workers=12) as ex:
         futs = {ex.submit(fetch_reddit if s.get('type') == 'reddit' else fetch_rss, s): s
-                for s in SOURCES}
+                for s in sources}
         for fut in as_completed(futs, timeout=25):
             try:
                 for h in fut.result():
@@ -282,8 +301,10 @@ class handler(BaseHTTPRequestHandler):
         p      = parsed.path.rstrip('/')
 
         if p == '/api/headlines':
-            q    = (parse_qs(parsed.query).get('q') or [None])[0]
-            data = search_news(q) if q else fetch_all_cached()
+            qs   = parse_qs(parsed.query)
+            q    = (qs.get('q') or [None])[0]
+            lang = (qs.get('lang') or ['en'])[0]
+            data = search_news(q) if q else fetch_all_cached(lang)
             body = json.dumps(data, default=str).encode()
             self.send_response(200)
             self.send_header('Content-Type',   'application/json')

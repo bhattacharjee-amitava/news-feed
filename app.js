@@ -236,6 +236,31 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js').catch(() => {});
 }
 
+// ── PWA install prompt ──────────────────────────────────────
+
+let deferredInstall = null;
+
+window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    deferredInstall = e;
+    document.getElementById('install-banner').classList.remove('hidden');
+});
+
+window.addEventListener('appinstalled', () => {
+    deferredInstall = null;
+    document.getElementById('install-banner').classList.add('hidden');
+});
+
+document.getElementById('install-btn').addEventListener('click', async () => {
+    if (!deferredInstall) return;
+    deferredInstall.prompt();
+    const { outcome } = await deferredInstall.userChoice;
+    if (outcome === 'accepted') {
+        deferredInstall = null;
+        document.getElementById('install-banner').classList.add('hidden');
+    }
+});
+
 // ── Boot ───────────────────────────────────────────────────
 
 fetchHeadlines();

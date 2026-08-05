@@ -150,6 +150,36 @@ html, body {
 }
 #search-input::placeholder { color: var(--muted); }
 
+/* ── Install banner ───────────────────────────────────────── */
+#install-banner {
+  position: fixed;
+  bottom: var(--bar-h);
+  left: 0; right: 0;
+  background: var(--card);
+  border-top: 0.5px solid var(--accent);
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  z-index: 25;
+  font-size: 13px;
+  color: var(--text);
+}
+#install-banner.hidden { display: none; }
+#install-btn {
+  flex-shrink: 0;
+  background: var(--accent);
+  color: #080c12;
+  border: none;
+  border-radius: 6px;
+  padding: 7px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+#install-btn:active { opacity: 0.8; }
+
 /* ── Action bar ───────────────────────────────────────────── */
 #action-bar {
   position: fixed;

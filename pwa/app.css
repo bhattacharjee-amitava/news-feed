@@ -53,6 +53,9 @@ html, body {
   font-size: 13px;
   font-family: ui-monospace, monospace;
   letter-spacing: 0.04em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .spinner {
   width: 24px; height: 24px;

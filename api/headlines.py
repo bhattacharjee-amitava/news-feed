@@ -26,6 +26,7 @@ MIME = {
     '.css':  'text/css',
     '.js':   'application/javascript',
     '.json': 'application/json',
+    '.png':  'image/png',
     '.svg':  'image/svg+xml',
     '.ico':  'image/x-icon',
     '.txt':  'text/plain',

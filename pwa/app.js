@@ -153,10 +153,12 @@ function applyFilter(query) {
         matched = cards.filter(c => words.some(w => c.dataset.title.includes(w)));
     }
 
-    // Step 3: nothing at all — show "Not found"
+    // Step 3: nothing locally — silently fetch live in background
     if (!matched.length) {
         cards.forEach(c => c.style.display = 'none');
+        document.getElementById('search-not-found').textContent = 'Searching…';
         document.getElementById('search-not-found').classList.remove('hidden');
+        fetchLive(query.trim());
         return;
     }
 
@@ -192,10 +194,30 @@ document.getElementById('btn-search').addEventListener('click', () =>
 document.getElementById('search-input').addEventListener('input',  e => applyFilter(e.target.value));
 document.getElementById('search-input').addEventListener('keydown', e => {
     if (e.key === 'Enter') {
-        closeSearch(true); // filter already applied while typing — just close bar
+        closeSearch(true);
     }
     if (e.key === 'Escape') closeSearch();
 });
+
+// ── Live search ─────────────────────────────────────────────
+
+async function fetchLive(q) {
+    try {
+        const res  = await fetch(`/api/headlines?q=${encodeURIComponent(q)}`);
+        const data = await res.json();
+        document.getElementById('search-not-found').classList.add('hidden');
+        if (!data.length) {
+            document.getElementById('search-not-found').textContent = 'Not found!';
+            document.getElementById('search-not-found').classList.remove('hidden');
+            return;
+        }
+        renderBatch(data, true);
+        setStatus(`${data.length} results for "${q}"`);
+    } catch {
+        document.getElementById('search-not-found').textContent = 'Not found!';
+        document.getElementById('search-not-found').classList.remove('hidden');
+    }
+}
 
 // ── Modal ──────────────────────────────────────────────────
 

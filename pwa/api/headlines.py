@@ -34,7 +34,7 @@ MIME = {
 
 SOURCES = [
     # GEO-POLITICAL
-    {"name": "The Guardian",     "url": "https://www.theguardian.com/world/rss",                                  "category": "GEO-POLITICAL", "authority": 10},
+    {"name": "Reuters World",    "url": "https://feeds.reuters.com/reuters/worldNews",                            "category": "GEO-POLITICAL", "authority": 10},
     {"name": "BBC World",        "url": "https://feeds.bbci.co.uk/news/world/rss.xml",                           "category": "GEO-POLITICAL", "authority": 9},
     {"name": "Al Jazeera",       "url": "https://www.aljazeera.com/xml/rss/all.xml",                             "category": "GEO-POLITICAL", "authority": 9},
     {"name": "The Wire",         "url": "https://thewire.in/feed",                                               "category": "GEO-POLITICAL", "authority": 8},
@@ -57,7 +57,7 @@ SOURCES = [
     # FINANCE
     {"name": "Yahoo Finance",    "url": "https://finance.yahoo.com/news/rssindex",                               "category": "FINANCE",       "authority": 8},
     {"name": "Moneycontrol",     "url": "https://www.moneycontrol.com/rss/top.xml",                             "category": "FINANCE",       "authority": 9},
-    {"name": "Guardian Business","url": "https://www.theguardian.com/business/rss",                              "category": "FINANCE",       "authority": 10},
+    {"name": "Reuters Business", "url": "https://feeds.reuters.com/reuters/businessNews",                        "category": "FINANCE",       "authority": 10},
     {"name": "MarketWatch",      "url": "https://feeds.marketwatch.com/marketwatch/topstories/",                 "category": "FINANCE",       "authority": 9},
     {"name": "ET Markets",       "url": "https://economictimes.indiatimes.com/markets/rssfeeds/1977021501.cms", "category": "FINANCE",       "authority": 8},
     # SCIENCE

@@ -131,8 +131,10 @@ function applyFilter(query) {
     activeFilter = q;
     const cards = [...document.querySelectorAll('.card')];
     if (!q) { cards.forEach(c => c.style.display = ''); return; }
+    // Same logic as Python TUI: if query matches any source name → source filter; else → title filter
+    const sourceMatch = cards.some(c => c.dataset.source.includes(q));
     cards.forEach(c => {
-        const hit = c.dataset.source.includes(q) || c.dataset.title.includes(q);
+        const hit = sourceMatch ? c.dataset.source.includes(q) : c.dataset.title.includes(q);
         c.style.display = hit ? '' : 'none';
     });
 }

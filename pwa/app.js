@@ -9,6 +9,7 @@ let displayedIds = new Set();
 let pending      = [];
 let searchActive = false;
 let fetchCount   = 0;
+let activeFilter = '';
 
 // ── Helpers ────────────────────────────────────────────────
 
@@ -71,7 +72,7 @@ function renderBatch(batch) {
     // Insert before sentinel so sentinel stays at bottom
     feed.insertBefore(frag, sentinel);
 
-    if (searchActive) applyFilter(document.getElementById('search-input').value);
+    if (activeFilter) applyFilter(activeFilter);
     setStatus(`Last fetch: ${new Date().toLocaleTimeString()}`);
 }
 
@@ -146,6 +147,7 @@ function parseIntent(query) {
 
 function applyFilter(query) {
     const q     = query.trim();
+    activeFilter = q;
     const cards = [...document.querySelectorAll('.card')];
     if (!q) { cards.forEach(c => c.style.display = ''); return; }
 
@@ -164,15 +166,16 @@ function openSearch() {
     document.getElementById('search-bar').classList.remove('hidden');
     document.getElementById('btn-search').classList.add('active');
     const inp = document.getElementById('search-input');
-    inp.value = '';
+    inp.value = activeFilter;
     inp.focus();
+    inp.select();
 }
 
-function closeSearch() {
+function closeSearch(keepFilter = false) {
     searchActive = false;
     document.getElementById('search-bar').classList.add('hidden');
     document.getElementById('btn-search').classList.remove('active');
-    applyFilter('');
+    if (!keepFilter) applyFilter('');
 }
 
 document.getElementById('btn-search').addEventListener('click', () =>
@@ -185,8 +188,8 @@ document.getElementById('search-input').addEventListener('keydown', e => {
         if (!q) return;
         const intent = parseIntent(q);
         if (intent.type === 'source') {
-            // Source filter already applied while typing — just close the bar
-            closeSearch();
+            applyFilter(q);
+            closeSearch(true); // keep filter visible after bar closes
         } else {
             fetchHeadlines(q);
         }

@@ -219,22 +219,27 @@ if ('serviceWorker' in navigator) {
 // ── PWA install prompt ──────────────────────────────────────
 
 let deferredInstall = null;
+let installTimer    = null;
 
 const isStandalone = window.matchMedia('(display-mode: standalone)').matches
     || window.navigator.standalone === true;
-const installDismissed = localStorage.getItem('install-dismissed');
+
+function hideInstallBanner() {
+    clearTimeout(installTimer);
+    document.getElementById('install-banner').classList.add('hidden');
+}
 
 window.addEventListener('beforeinstallprompt', e => {
     e.preventDefault();
-    if (isStandalone || installDismissed) return;
+    if (isStandalone) return;
     deferredInstall = e;
     document.getElementById('install-banner').classList.remove('hidden');
+    installTimer = setTimeout(hideInstallBanner, 10000); // auto-hide after 10s
 });
 
 window.addEventListener('appinstalled', () => {
     deferredInstall = null;
-    localStorage.setItem('install-dismissed', '1');
-    document.getElementById('install-banner').classList.add('hidden');
+    hideInstallBanner();
 });
 
 document.getElementById('install-btn').addEventListener('click', async () => {
@@ -242,8 +247,7 @@ document.getElementById('install-btn').addEventListener('click', async () => {
     deferredInstall.prompt();
     await deferredInstall.userChoice;
     deferredInstall = null;
-    localStorage.setItem('install-dismissed', '1');
-    document.getElementById('install-banner').classList.add('hidden');
+    hideInstallBanner();
 });
 
 // ── Boot ───────────────────────────────────────────────────

@@ -240,14 +240,20 @@ if ('serviceWorker' in navigator) {
 
 let deferredInstall = null;
 
+const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+    || window.navigator.standalone === true;
+const installDismissed = localStorage.getItem('install-dismissed');
+
 window.addEventListener('beforeinstallprompt', e => {
     e.preventDefault();
+    if (isStandalone || installDismissed) return;
     deferredInstall = e;
     document.getElementById('install-banner').classList.remove('hidden');
 });
 
 window.addEventListener('appinstalled', () => {
     deferredInstall = null;
+    localStorage.setItem('install-dismissed', '1');
     document.getElementById('install-banner').classList.add('hidden');
 });
 
@@ -256,6 +262,7 @@ document.getElementById('install-btn').addEventListener('click', async () => {
     deferredInstall.prompt();
     await deferredInstall.userChoice;
     deferredInstall = null;
+    localStorage.setItem('install-dismissed', '1');
     document.getElementById('install-banner').classList.add('hidden');
 });
 

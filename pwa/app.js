@@ -126,36 +126,14 @@ async function fetchHeadlines(q) {
 
 // ── Filter ─────────────────────────────────────────────────
 
-const SOURCE_TRIGGERS = new Set(['from', 'source', 'by', 'channel', 'publisher', 'outlet', 'site']);
-const STOP_WORDS      = new Set([
-    'show', 'me', 'news', 'only', 'just', 'get', 'find', 'give', 'the', 'a', 'an',
-    'and', 'or', 'in', 'of', 'headlines', 'articles', 'stories', 'about', 'on',
-    'all', 'latest', 'recent', 'today', 'want', 'please', 'can', 'you', 'i', 'we',
-    'us', 'for', 'with', 'that', 'this', 'is', 'are',
-]);
-
-function parseIntent(query) {
-    const words = query.toLowerCase().split(/\W+/).filter(w => w);
-    // If query contains a source-trigger word, extract the non-noise token as source filter
-    if (words.some(w => SOURCE_TRIGGERS.has(w))) {
-        const noise  = new Set([...SOURCE_TRIGGERS, ...STOP_WORDS]);
-        const tokens = words.filter(w => !noise.has(w) && w.length >= 2);
-        if (tokens.length) return { type: 'source', value: tokens[0] };
-    }
-    return { type: 'keyword', value: query.toLowerCase() };
-}
-
 function applyFilter(query) {
-    const q     = query.trim();
+    const q = query.trim().toLowerCase();
     activeFilter = q;
     const cards = [...document.querySelectorAll('.card')];
     if (!q) { cards.forEach(c => c.style.display = ''); return; }
-
-    const intent = parseIntent(q);
     cards.forEach(c => {
-        c.style.display = intent.type === 'source'
-            ? (c.dataset.source.includes(intent.value) ? '' : 'none')
-            : (c.dataset.title.includes(intent.value) ? '' : 'none');
+        const hit = c.dataset.source.includes(q) || c.dataset.title.includes(q);
+        c.style.display = hit ? '' : 'none';
     });
 }
 
@@ -186,12 +164,12 @@ document.getElementById('search-input').addEventListener('keydown', e => {
     if (e.key === 'Enter') {
         const q = e.target.value.trim();
         if (!q) return;
-        const intent = parseIntent(q);
-        if (intent.type === 'source') {
-            applyFilter(q);
-            closeSearch(true); // keep filter visible after bar closes
+        const visible = [...document.querySelectorAll('.card')]
+            .some(c => c.style.display !== 'none');
+        if (visible) {
+            closeSearch(true); // local filter matched — keep it, close bar
         } else {
-            fetchHeadlines(q);
+            fetchHeadlines(q); // nothing matched locally — fetch from API
         }
     }
     if (e.key === 'Escape') closeSearch();

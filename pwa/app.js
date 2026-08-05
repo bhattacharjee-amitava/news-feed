@@ -10,6 +10,7 @@ let pending      = [];
 let searchActive = false;
 let fetchCount   = 0;
 let activeFilter = '';
+let currentLang  = 'en';
 
 // ── Helpers ────────────────────────────────────────────────
 
@@ -100,7 +101,8 @@ const observer = new IntersectionObserver(entries => {
 // ── Fetch ──────────────────────────────────────────────────
 
 async function fetchHeadlines(q) {
-    const url = q ? `/api/headlines?q=${encodeURIComponent(q)}` : '/api/headlines';
+    const base = q ? `/api/headlines?q=${encodeURIComponent(q)}` : `/api/headlines?lang=${currentLang}`;
+    const url  = base;
     setStatus(q ? `Searching "${q}"…` : 'Fetching…');
     try {
         const res  = await fetch(url);
@@ -229,6 +231,39 @@ async function fetchLive(q) {
         document.getElementById('search-not-found').classList.remove('hidden');
     }
 }
+
+// ── Language switcher ──────────────────────────────────────
+
+function switchLang(lang) {
+    currentLang = lang;
+    document.getElementById('lang-btn').textContent = lang === 'bn' ? 'বাং' : 'EN';
+    document.querySelectorAll('.lang-opt').forEach(b =>
+        b.classList.toggle('active', b.dataset.lang === lang)
+    );
+    allIds.clear(); displayedIds.clear();
+    pending = []; fetchCount = 0; activeFilter = '';
+    document.getElementById('feed').querySelectorAll('.card').forEach(c => c.remove());
+    document.getElementById('search-not-found').classList.add('hidden');
+    const loading = document.createElement('div');
+    loading.id = 'loading';
+    loading.innerHTML = '<div class="spinner"></div>Fetching news for you. Read it. Enjoy it.';
+    document.getElementById('feed').insertBefore(loading, document.getElementById('sentinel'));
+    fetchHeadlines();
+}
+
+document.getElementById('lang-btn').addEventListener('click', e => {
+    e.stopPropagation();
+    document.getElementById('lang-dropdown').classList.toggle('hidden');
+});
+document.querySelectorAll('.lang-opt').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.getElementById('lang-dropdown').classList.add('hidden');
+        if (btn.dataset.lang !== currentLang) switchLang(btn.dataset.lang);
+    });
+});
+document.addEventListener('click', () =>
+    document.getElementById('lang-dropdown').classList.add('hidden')
+);
 
 // ── Modal ──────────────────────────────────────────────────
 

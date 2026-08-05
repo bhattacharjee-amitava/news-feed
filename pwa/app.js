@@ -147,9 +147,9 @@ function applyFilter(query) {
     // Step 1: exact phrase match in title
     let matched = cards.filter(c => c.dataset.title.includes(q));
 
-    // Step 2: if nothing, match any individual word in title
+    // Step 2: if nothing, match any individual word in title (strip punctuation)
     if (!matched.length) {
-        const words = q.split(/\s+/).filter(w => w.length > 0);
+        const words = q.split(/\W+/).filter(w => w.length >= 2);
         matched = cards.filter(c => words.some(w => c.dataset.title.includes(w)));
     }
 

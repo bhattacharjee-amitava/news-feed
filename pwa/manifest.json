@@ -1,0 +1,19 @@
+{
+  "name": "World Signal Feed",
+  "short_name": "WorldSignal",
+  "description": "Real-time global intelligence feed from 150+ sources",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#080c12",
+  "theme_color": "#080c12",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["news"]
+}

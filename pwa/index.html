@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#080c12">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="WorldSignal">
+  <meta name="description" content="Real-time global intelligence from 150+ sources">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="apple-touch-icon" href="/icon.svg">
+  <link rel="stylesheet" href="/app.css">
+  <title>World Signal Feed</title>
+</head>
+<body>
+
+<div id="status-strip">
+  <span id="shown-count">0 shown</span>
+  <span class="strip-dot">·</span>
+  <span id="last-fetch">Starting…</span>
+</div>
+
+<div id="feed">
+  <div id="loading">
+    <div class="spinner"></div>
+    Fetching from 150+ sources worldwide…
+  </div>
+</div>
+
+<div id="paused-banner" class="hidden">
+  ⏸ Paused
+  <span class="buffer-count" id="buffer-count">0 buffered</span>
+</div>
+
+<div id="search-bar" class="hidden">
+  <input id="search-input" type="search" autocomplete="off" autocorrect="off"
+         spellcheck="false" placeholder="Source or keyword — Enter to fetch live">
+</div>
+
+<div id="action-bar">
+  <button class="action-btn" id="btn-search" aria-label="Search">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <span>Search</span>
+  </button>
+  <button class="action-btn" id="btn-resume" aria-label="Resume">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+    <span>Resume</span>
+  </button>
+  <button class="action-btn" id="btn-quit" aria-label="Quit">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    <span>Quit</span>
+  </button>
+</div>
+
+<script src="/app.js"></script>
+</body>
+</html>

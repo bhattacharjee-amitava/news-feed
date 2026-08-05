@@ -1,0 +1,8 @@
+{
+  "functions": {
+    "api/headlines.py": {
+      "maxDuration": 30,
+      "memory": 512
+    }
+  }
+}

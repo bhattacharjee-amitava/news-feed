@@ -26,11 +26,7 @@
     <div class="spinner"></div>
     Fetching from 150+ sources worldwide…
   </div>
-</div>
-
-<div id="paused-banner" class="hidden">
-  ⏸ Paused
-  <span class="buffer-count" id="buffer-count">0 buffered</span>
+  <div id="sentinel"></div>
 </div>
 
 <div id="search-bar" class="hidden">
@@ -43,14 +39,20 @@
     <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
     <span>Search</span>
   </button>
-  <button class="action-btn" id="btn-resume" aria-label="Resume">
-    <svg viewBox="0 0 24 24" aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-    <span>Resume</span>
-  </button>
-  <button class="action-btn" id="btn-quit" aria-label="Quit">
-    <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-    <span>Quit</span>
-  </button>
+</div>
+
+<!-- Article modal -->
+<div id="modal-overlay" class="hidden" role="dialog" aria-modal="true">
+  <div id="modal">
+    <div id="modal-meta">
+      <span id="modal-source"></span>
+      <span id="modal-age"></span>
+    </div>
+    <div id="modal-title"></div>
+    <div id="modal-desc"></div>
+    <a id="modal-link" target="_blank" rel="noopener noreferrer">Read Full Article</a>
+    <button id="modal-close">Close</button>
+  </div>
 </div>
 
 <script src="/app.js"></script>

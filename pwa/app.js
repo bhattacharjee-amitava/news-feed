@@ -81,6 +81,7 @@ function renderBatch(batch, prepend = false, live = false) {
     }
 
     if (activeFilter) applyFilter(activeFilter);
+    updateTopCard();
     setStatus(`Last fetch: ${new Date().toLocaleTimeString()}`);
 }
 
@@ -361,6 +362,24 @@ document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') trackSession();
 });
 window.addEventListener('pagehide', trackSession);
+
+// ── Top card highlight ─────────────────────────────────────
+
+function updateTopCard() {
+    const statusH = document.getElementById('status-strip').offsetHeight;
+    const cards   = [...document.querySelectorAll('.card')].filter(c => c.style.display !== 'none');
+    let topCard   = null;
+    for (const card of cards) {
+        if (card.getBoundingClientRect().bottom > statusH) {
+            topCard = card;
+            break;
+        }
+    }
+    cards.forEach(c => c.classList.remove('top-card'));
+    if (topCard) topCard.classList.add('top-card');
+}
+
+window.addEventListener('scroll', () => requestAnimationFrame(updateTopCard), { passive: true });
 
 // ── Boot ───────────────────────────────────────────────────
 

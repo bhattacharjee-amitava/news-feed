@@ -386,4 +386,6 @@ document.addEventListener('scroll', () => requestAnimationFrame(updateTopCard), 
 
 fetchHeadlines();
 setInterval(fetchHeadlines, POLL_MS);
-setTimeout(updateTopCard, 3000); // fallback in case scroll never fires
+setTimeout(updateTopCard, 1000);
+setTimeout(updateTopCard, 3000);
+setTimeout(updateTopCard, 6000);

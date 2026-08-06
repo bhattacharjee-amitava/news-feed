@@ -129,11 +129,13 @@ html, body {
 }
 .card:active { background: var(--card); }
 .card.top-card {
-  background: rgba(0, 201, 167, 0.10);
-  border-left: 2px solid var(--accent);
+  background: rgba(0, 201, 167, 0.18);
+  border-left: 3px solid var(--accent);
+  padding-left: 13px;
 }
 .card.top-card .headline {
   font-size: 17px;
+  color: var(--accent);
 }
 
 .card-meta {

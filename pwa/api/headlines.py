@@ -8,7 +8,6 @@ from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from urllib.parse import urlparse, parse_qs, quote
 
-import re
 import feedparser
 import requests
 
@@ -34,177 +33,184 @@ MIME = {
 }
 
 SOURCES = [
-    # ALWAYS FRESH — Google News aggregates minutes-old headlines
-    {"name": "Google News",      "url": "https://news.google.com/rss?hl=en-IN&gl=IN&ceid=IN:en",                 "category": "GEO-POLITICAL", "authority": 10},
-    {"name": "Google News World","url": "https://news.google.com/rss/headlines/section/topic/WORLD?hl=en&gl=IN", "category": "GEO-POLITICAL", "authority": 10},
-    {"name": "Google News Tech", "url": "https://news.google.com/rss/headlines/section/topic/TECHNOLOGY?hl=en",  "category": "TECH",          "authority": 10},
-    {"name": "Google News Biz",  "url": "https://news.google.com/rss/headlines/section/topic/BUSINESS?hl=en",   "category": "FINANCE",       "authority": 10},
-    {"name": "Google News Sports","url": "https://news.google.com/rss/headlines/section/topic/SPORTS?hl=en",    "category": "SPORTS",        "authority": 10},
-    # GEO-POLITICAL
-    {"name": "Reuters World",    "url": "https://feeds.reuters.com/reuters/worldNews",                            "category": "GEO-POLITICAL", "authority": 10},
-    {"name": "BBC World",        "url": "https://feeds.bbci.co.uk/news/world/rss.xml",                           "category": "GEO-POLITICAL", "authority": 9},
-    {"name": "Al Jazeera",       "url": "https://www.aljazeera.com/xml/rss/all.xml",                             "category": "GEO-POLITICAL", "authority": 9},
-    {"name": "The Wire",         "url": "https://thewire.in/feed",                                               "category": "GEO-POLITICAL", "authority": 8},
-    {"name": "The Print",        "url": "https://theprint.in/feed/",                                             "category": "GEO-POLITICAL", "authority": 8},
-    {"name": "Foreign Policy",   "url": "https://foreignpolicy.com/feed/",                                       "category": "GEO-POLITICAL", "authority": 9},
-    {"name": "The Diplomat",     "url": "https://thediplomat.com/feed/",                                         "category": "GEO-POLITICAL", "authority": 8},
-    # SPORTS
-    {"name": "ESPN",             "url": "https://www.espn.com/espn/rss/news",                                    "category": "SPORTS",        "authority": 9},
-    {"name": "ESPNcricinfo",     "url": "https://www.espncricinfo.com/rss/content/story/feeds/0.xml",            "category": "SPORTS",        "authority": 10},
-    {"name": "BBC Sport",        "url": "https://feeds.bbci.co.uk/sport/rss.xml",                                "category": "SPORTS",        "authority": 9},
-    {"name": "NDTV Cricket",     "url": "https://sports.ndtv.com/feeds/rss/cricket-news.xml",                   "category": "SPORTS",        "authority": 8},
-    {"name": "Goal.com",         "url": "https://www.goal.com/feeds/en/news",                                    "category": "SPORTS",        "authority": 9},
-    # TECH
-    {"name": "TechCrunch",       "url": "https://techcrunch.com/feed/",                                          "category": "TECH",          "authority": 9},
-    {"name": "Ars Technica",     "url": "https://feeds.arstechnica.com/arstechnica/index",                       "category": "TECH",          "authority": 9},
-    {"name": "The Verge",        "url": "https://www.theverge.com/rss/index.xml",                                "category": "TECH",          "authority": 9},
-    {"name": "Wired",            "url": "https://www.wired.com/feed/rss",                                        "category": "TECH",          "authority": 9},
-    {"name": "MIT Tech Review",  "url": "https://www.technologyreview.com/feed/",                                "category": "TECH",          "authority": 10},
-    {"name": "VentureBeat",      "url": "https://venturebeat.com/feed/",                                         "category": "TECH",          "authority": 8},
-    # FINANCE
-    {"name": "Yahoo Finance",    "url": "https://finance.yahoo.com/news/rssindex",                               "category": "FINANCE",       "authority": 8},
-    {"name": "Moneycontrol",     "url": "https://www.moneycontrol.com/rss/top.xml",                             "category": "FINANCE",       "authority": 9},
-    {"name": "Reuters Business", "url": "https://feeds.reuters.com/reuters/businessNews",                        "category": "FINANCE",       "authority": 10},
-    {"name": "MarketWatch",      "url": "https://feeds.marketwatch.com/marketwatch/topstories/",                 "category": "FINANCE",       "authority": 9},
-    {"name": "ET Markets",       "url": "https://economictimes.indiatimes.com/markets/rssfeeds/1977021501.cms", "category": "FINANCE",       "authority": 8},
-    # SCIENCE
-    {"name": "NASA",             "url": "https://www.nasa.gov/rss/dyn/breaking_news.rss",                        "category": "SCIENCE",       "authority": 10},
-    {"name": "Science Daily",    "url": "https://www.sciencedaily.com/rss/all.xml",                              "category": "SCIENCE",       "authority": 9},
-    {"name": "New Scientist",    "url": "https://www.newscientist.com/feed/home/",                               "category": "SCIENCE",       "authority": 9},
-    {"name": "BBC Science",      "url": "https://feeds.bbci.co.uk/news/science_and_environment/rss.xml",         "category": "SCIENCE",       "authority": 9},
-    {"name": "Phys.org",         "url": "https://phys.org/rss-feed/",                                           "category": "SCIENCE",       "authority": 9},
-    # EXPLORE (was QUIZ)
-    {"name": "Atlas Obscura",    "url": "https://www.atlasobscura.com/feeds/latest",                             "category": "EXPLORE",       "authority": 9},
-    {"name": "Smithsonian",      "url": "https://www.smithsonianmag.com/rss/latest_articles/",                   "category": "EXPLORE",       "authority": 9},
-    {"name": "Big Think",        "url": "https://bigthink.com/feed/",                                            "category": "EXPLORE",       "authority": 8},
-    # NATURE (was OCEAN)
-    {"name": "NOAA",             "url": "https://www.noaa.gov/feed/",                                            "category": "NATURE",        "authority": 10},
-    {"name": "Maritime Exec",    "url": "https://maritime-executive.com/rss/",                                   "category": "NATURE",        "authority": 9},
-    # HEALTH
-    {"name": "WHO",              "url": "https://www.who.int/rss-feeds/news-english.xml",                        "category": "HEALTH",        "authority": 10},
-    {"name": "Medical News Today","url":"https://www.medicalnewstoday.com/rss/news",                             "category": "HEALTH",        "authority": 9},
-    {"name": "Healthline",       "url": "https://www.healthline.com/rss/news",                                   "category": "HEALTH",        "authority": 8},
-    # POLITICS
-    {"name": "Politico",         "url": "https://www.politico.com/rss/politics08.xml",                          "category": "POLITICS",      "authority": 9},
-    {"name": "The Hill",         "url": "https://thehill.com/rss/syndicator/19110",                             "category": "POLITICS",      "authority": 8},
-    {"name": "The Atlantic",     "url": "https://www.theatlantic.com/feed/all/",                                 "category": "POLITICS",      "authority": 9},
-    # INDIA
-    {"name": "Times of India",   "url": "https://timesofindia.indiatimes.com/rssfeedstopstories.cms",           "category": "INDIA",         "authority": 9},
-    {"name": "The Hindu",        "url": "https://www.thehindu.com/feeder/default.rss",                          "category": "INDIA",         "authority": 9},
-    {"name": "Indian Express",   "url": "https://indianexpress.com/feed/",                                      "category": "INDIA",         "authority": 9},
-    {"name": "NDTV",             "url": "https://feeds.feedburner.com/ndtvnews-top-stories",                    "category": "INDIA",         "authority": 8},
-    {"name": "Hindustan Times",  "url": "https://www.hindustantimes.com/feeds/rss/india-news/rssfeed.xml",      "category": "INDIA",         "authority": 8},
-    # FASHION
-    {"name": "Vogue",            "url": "https://www.vogue.com/feed/rss",                                       "category": "FASHION",       "authority": 10},
-    {"name": "Harper's Bazaar",  "url": "https://www.harpersbazaar.com/rss/all.xml",                            "category": "FASHION",       "authority": 9},
-    {"name": "Elle",             "url": "https://www.elle.com/rss/all.xml",                                     "category": "FASHION",       "authority": 9},
-    # REDDIT
-    {"name": "Reddit r/worldnews",       "url": "https://www.reddit.com/r/worldnews/hot.json?limit=25",       "category": "GEO-POLITICAL", "authority": 7, "type": "reddit"},
-    {"name": "Reddit r/geopolitics",     "url": "https://www.reddit.com/r/geopolitics/hot.json?limit=25",    "category": "GEO-POLITICAL", "authority": 7, "type": "reddit"},
-    {"name": "Reddit r/india",           "url": "https://www.reddit.com/r/india/hot.json?limit=25",          "category": "GEO-POLITICAL", "authority": 6, "type": "reddit"},
-    {"name": "Reddit r/Cricket",         "url": "https://www.reddit.com/r/Cricket/hot.json?limit=25",        "category": "SPORTS",        "authority": 7, "type": "reddit"},
-    {"name": "Reddit r/soccer",          "url": "https://www.reddit.com/r/soccer/hot.json?limit=25",         "category": "SPORTS",        "authority": 7, "type": "reddit"},
-    {"name": "Reddit r/technology",      "url": "https://www.reddit.com/r/technology/hot.json?limit=25",     "category": "TECH",          "authority": 7, "type": "reddit"},
-    {"name": "Reddit r/MachineLearning", "url": "https://www.reddit.com/r/MachineLearning/hot.json?limit=25","category": "TECH",          "authority": 8, "type": "reddit"},
-    {"name": "Reddit r/science",         "url": "https://www.reddit.com/r/science/hot.json?limit=25",        "category": "SCIENCE",       "authority": 7, "type": "reddit"},
-    {"name": "Reddit r/investing",       "url": "https://www.reddit.com/r/investing/hot.json?limit=25",      "category": "FINANCE",       "authority": 6, "type": "reddit"},
-    {"name": "Reddit r/movies",          "url": "https://www.reddit.com/r/movies/hot.json?limit=25",         "category": "ENTERTAINMENT", "authority": 6, "type": "reddit"},
-    {"name": "Reddit r/todayilearned",   "url": "https://www.reddit.com/r/todayilearned/hot.json?limit=25",  "category": "QUIZ",          "authority": 7, "type": "reddit"},
+    # ── Google News — section feeds (already category-specific) ──────────────
+    {"name": "Google News World", "url": "https://news.google.com/rss/headlines/section/topic/WORLD?hl=en&gl=IN",      "category": "GEO-POLITICAL", "authority": 10},
+    {"name": "Google News Tech",  "url": "https://news.google.com/rss/headlines/section/topic/TECHNOLOGY?hl=en",       "category": "TECH",          "authority": 10},
+    {"name": "Google News Biz",   "url": "https://news.google.com/rss/headlines/section/topic/BUSINESS?hl=en",        "category": "FINANCE",       "authority": 10},
+    {"name": "Google News Sports","url": "https://news.google.com/rss/headlines/section/topic/SPORTS?hl=en",          "category": "SPORTS",        "authority": 10},
+    {"name": "Google News Health","url": "https://news.google.com/rss/headlines/section/topic/HEALTH?hl=en",          "category": "HEALTH",        "authority": 10},
+    {"name": "Google News Science","url":"https://news.google.com/rss/headlines/section/topic/SCIENCE?hl=en",         "category": "SCIENCE",       "authority": 10},
+    {"name": "Google News India", "url": "https://news.google.com/rss/headlines/section/geo/IN?hl=en-IN&gl=IN&ceid=IN:en", "category": "INDIA",    "authority": 10},
+    # ── Reuters — section feeds ───────────────────────────────────────────────
+    {"name": "Reuters World",     "url": "https://feeds.reuters.com/reuters/worldNews",                                "category": "GEO-POLITICAL", "authority": 10},
+    {"name": "Reuters Business",  "url": "https://feeds.reuters.com/reuters/businessNews",                             "category": "FINANCE",       "authority": 10},
+    # ── BBC — section feeds ───────────────────────────────────────────────────
+    {"name": "BBC World",         "url": "https://feeds.bbci.co.uk/news/world/rss.xml",                               "category": "GEO-POLITICAL", "authority": 9},
+    {"name": "BBC Sport",         "url": "https://feeds.bbci.co.uk/sport/rss.xml",                                    "category": "SPORTS",        "authority": 9},
+    {"name": "BBC Science",       "url": "https://feeds.bbci.co.uk/news/science_and_environment/rss.xml",             "category": "SCIENCE",       "authority": 9},
+    {"name": "BBC Health",        "url": "https://feeds.bbci.co.uk/news/health/rss.xml",                              "category": "HEALTH",        "authority": 9},
+    {"name": "BBC Business",      "url": "https://feeds.bbci.co.uk/news/business/rss.xml",                            "category": "FINANCE",       "authority": 9},
+    {"name": "BBC Entertainment", "url": "https://feeds.bbci.co.uk/news/entertainment_and_arts/rss.xml",              "category": "ENTERTAINMENT", "authority": 9},
+    {"name": "BBC Tech",          "url": "https://feeds.bbci.co.uk/news/technology/rss.xml",                          "category": "TECH",          "authority": 9},
+    # ── Other world sources ───────────────────────────────────────────────────
+    {"name": "Al Jazeera",        "url": "https://www.aljazeera.com/xml/rss/all.xml",                                 "category": "GEO-POLITICAL", "authority": 9},
+    {"name": "Foreign Policy",    "url": "https://foreignpolicy.com/feed/",                                           "category": "GEO-POLITICAL", "authority": 9},
+    {"name": "The Diplomat",      "url": "https://thediplomat.com/feed/",                                             "category": "GEO-POLITICAL", "authority": 8},
+    # ── Sports — dedicated sources ────────────────────────────────────────────
+    {"name": "ESPN",              "url": "https://www.espn.com/espn/rss/news",                                        "category": "SPORTS",        "authority": 9},
+    {"name": "ESPNcricinfo",      "url": "https://www.espncricinfo.com/rss/content/story/feeds/0.xml",                "category": "SPORTS",        "authority": 10},
+    {"name": "NDTV Cricket",      "url": "https://sports.ndtv.com/feeds/rss/cricket-news.xml",                       "category": "SPORTS",        "authority": 8},
+    {"name": "Goal.com",          "url": "https://www.goal.com/feeds/en/news",                                        "category": "SPORTS",        "authority": 9},
+    # ── Tech — dedicated sources ──────────────────────────────────────────────
+    {"name": "TechCrunch",        "url": "https://techcrunch.com/feed/",                                              "category": "TECH",          "authority": 9},
+    {"name": "Ars Technica",      "url": "https://feeds.arstechnica.com/arstechnica/index",                           "category": "TECH",          "authority": 9},
+    {"name": "MIT Tech Review",   "url": "https://www.technologyreview.com/feed/",                                    "category": "TECH",          "authority": 10},
+    {"name": "VentureBeat",       "url": "https://venturebeat.com/feed/",                                             "category": "TECH",          "authority": 8},
+    # ── Finance — dedicated sources ───────────────────────────────────────────
+    {"name": "Moneycontrol",      "url": "https://www.moneycontrol.com/rss/top.xml",                                  "category": "FINANCE",       "authority": 9},
+    {"name": "MarketWatch",       "url": "https://feeds.marketwatch.com/marketwatch/topstories/",                     "category": "FINANCE",       "authority": 9},
+    {"name": "ET Markets",        "url": "https://economictimes.indiatimes.com/markets/rssfeeds/1977021501.cms",      "category": "FINANCE",       "authority": 8},
+    # ── Science — dedicated sources ───────────────────────────────────────────
+    {"name": "NASA",              "url": "https://www.nasa.gov/rss/dyn/breaking_news.rss",                            "category": "SCIENCE",       "authority": 10},
+    {"name": "Science Daily",     "url": "https://www.sciencedaily.com/rss/all.xml",                                  "category": "SCIENCE",       "authority": 9},
+    {"name": "New Scientist",     "url": "https://www.newscientist.com/feed/home/",                                   "category": "SCIENCE",       "authority": 9},
+    {"name": "Phys.org",          "url": "https://phys.org/rss-feed/",                                               "category": "SCIENCE",       "authority": 9},
+    # ── Health — dedicated sources ────────────────────────────────────────────
+    {"name": "WHO",               "url": "https://www.who.int/rss-feeds/news-english.xml",                            "category": "HEALTH",        "authority": 10},
+    {"name": "Medical News Today","url": "https://www.medicalnewstoday.com/rss/news",                                 "category": "HEALTH",        "authority": 9},
+    {"name": "Healthline",        "url": "https://www.healthline.com/rss/news",                                       "category": "HEALTH",        "authority": 8},
+    # ── Explore — dedicated sources ───────────────────────────────────────────
+    {"name": "Atlas Obscura",     "url": "https://www.atlasobscura.com/feeds/latest",                                 "category": "EXPLORE",       "authority": 9},
+    {"name": "Smithsonian",       "url": "https://www.smithsonianmag.com/rss/latest_articles/",                       "category": "EXPLORE",       "authority": 9},
+    {"name": "Big Think",         "url": "https://bigthink.com/feed/",                                                "category": "EXPLORE",       "authority": 8},
+    # ── Nature — dedicated sources ────────────────────────────────────────────
+    {"name": "NOAA",              "url": "https://www.noaa.gov/feed/",                                                "category": "NATURE",        "authority": 10},
+    {"name": "Maritime Exec",     "url": "https://maritime-executive.com/rss/",                                       "category": "NATURE",        "authority": 9},
+    # ── Politics — dedicated sources ──────────────────────────────────────────
+    {"name": "Politico",          "url": "https://www.politico.com/rss/politics08.xml",                               "category": "POLITICS",      "authority": 9},
+    {"name": "The Hill",          "url": "https://thehill.com/rss/syndicator/19110",                                  "category": "POLITICS",      "authority": 8},
+    # ── Fashion — dedicated sources ───────────────────────────────────────────
+    {"name": "Vogue",             "url": "https://www.vogue.com/feed/rss",                                            "category": "FASHION",       "authority": 10},
+    {"name": "Harper's Bazaar",   "url": "https://www.harpersbazaar.com/rss/all.xml",                                 "category": "FASHION",       "authority": 9},
+    {"name": "Elle",              "url": "https://www.elle.com/rss/all.xml",                                          "category": "FASHION",       "authority": 9},
+    # ── Times of India — section feeds ───────────────────────────────────────
+    {"name": "TOI India",         "url": "https://timesofindia.indiatimes.com/rssfeeds/296589292.cms",                "category": "INDIA",         "authority": 9},
+    {"name": "TOI Sports",        "url": "https://timesofindia.indiatimes.com/rssfeeds/4719162.cms",                  "category": "SPORTS",        "authority": 8},
+    {"name": "TOI Tech",          "url": "https://timesofindia.indiatimes.com/rssfeeds/66949542.cms",                 "category": "TECH",          "authority": 8},
+    {"name": "TOI Business",      "url": "https://timesofindia.indiatimes.com/rssfeeds/1898055.cms",                  "category": "FINANCE",       "authority": 8},
+    {"name": "TOI Entertainment", "url": "https://timesofindia.indiatimes.com/rssfeeds/1081479906.cms",               "category": "ENTERTAINMENT", "authority": 8},
+    {"name": "TOI Health",        "url": "https://timesofindia.indiatimes.com/rssfeeds/3908081.cms",                  "category": "HEALTH",        "authority": 8},
+    # ── The Hindu — section feeds ─────────────────────────────────────────────
+    {"name": "Hindu India",       "url": "https://www.thehindu.com/news/national/feeder/default.rss",                 "category": "INDIA",         "authority": 9},
+    {"name": "Hindu Sports",      "url": "https://www.thehindu.com/sport/feeder/default.rss",                         "category": "SPORTS",        "authority": 9},
+    {"name": "Hindu SciTech",     "url": "https://www.thehindu.com/sci-tech/feeder/default.rss",                      "category": "TECH",          "authority": 9},
+    {"name": "Hindu Business",    "url": "https://www.thehindu.com/business/feeder/default.rss",                      "category": "FINANCE",       "authority": 9},
+    {"name": "Hindu Health",      "url": "https://www.thehindu.com/sci-tech/health/feeder/default.rss",               "category": "HEALTH",        "authority": 9},
+    {"name": "Hindu Entertainment","url": "https://www.thehindu.com/entertainment/feeder/default.rss",                "category": "ENTERTAINMENT", "authority": 9},
+    # ── Indian Express — section feeds ───────────────────────────────────────
+    {"name": "IE India",          "url": "https://indianexpress.com/section/india/feed/",                             "category": "INDIA",         "authority": 9},
+    {"name": "IE Sports",         "url": "https://indianexpress.com/section/sports/feed/",                            "category": "SPORTS",        "authority": 9},
+    {"name": "IE Tech",           "url": "https://indianexpress.com/section/technology/feed/",                        "category": "TECH",          "authority": 9},
+    {"name": "IE Business",       "url": "https://indianexpress.com/section/business/feed/",                          "category": "FINANCE",       "authority": 9},
+    {"name": "IE Entertainment",  "url": "https://indianexpress.com/section/entertainment/feed/",                     "category": "ENTERTAINMENT", "authority": 9},
+    {"name": "IE Health",         "url": "https://indianexpress.com/section/lifestyle/health/feed/",                  "category": "HEALTH",        "authority": 9},
+    # ── NDTV — section feeds ─────────────────────────────────────────────────
+    {"name": "NDTV India",        "url": "https://feeds.feedburner.com/ndtvnews-india-news",                          "category": "INDIA",         "authority": 8},
+    {"name": "NDTV Sports",       "url": "https://sports.ndtv.com/feeds/rss/sports-news.xml",                        "category": "SPORTS",        "authority": 8},
+    {"name": "NDTV Tech",         "url": "https://feeds.feedburner.com/ndtvtech-latest",                              "category": "TECH",          "authority": 8},
+    {"name": "NDTV Business",     "url": "https://feeds.feedburner.com/ndtvprofit-latest",                            "category": "FINANCE",       "authority": 8},
+    {"name": "NDTV Entertainment","url": "https://feeds.feedburner.com/ndtvmovies-latest",                            "category": "ENTERTAINMENT", "authority": 8},
+    # ── Hindustan Times — section feeds ──────────────────────────────────────
+    {"name": "HT India",          "url": "https://www.hindustantimes.com/feeds/rss/india-news/rssfeed.xml",           "category": "INDIA",         "authority": 8},
+    {"name": "HT Sports",         "url": "https://www.hindustantimes.com/feeds/rss/sports/rssfeed.xml",               "category": "SPORTS",        "authority": 8},
+    {"name": "HT Tech",           "url": "https://www.hindustantimes.com/feeds/rss/technology/rssfeed.xml",           "category": "TECH",          "authority": 8},
+    {"name": "HT Entertainment",  "url": "https://www.hindustantimes.com/feeds/rss/entertainment/rssfeed.xml",        "category": "ENTERTAINMENT", "authority": 8},
+    # ── Reddit — category-specific subreddits ────────────────────────────────
+    {"name": "Reddit r/worldnews",       "url": "https://www.reddit.com/r/worldnews/hot.json?limit=25",        "category": "GEO-POLITICAL", "authority": 7, "type": "reddit"},
+    {"name": "Reddit r/geopolitics",     "url": "https://www.reddit.com/r/geopolitics/hot.json?limit=25",     "category": "GEO-POLITICAL", "authority": 7, "type": "reddit"},
+    {"name": "Reddit r/india",           "url": "https://www.reddit.com/r/india/hot.json?limit=25",           "category": "INDIA",         "authority": 6, "type": "reddit"},
+    {"name": "Reddit r/Cricket",         "url": "https://www.reddit.com/r/Cricket/hot.json?limit=25",         "category": "SPORTS",        "authority": 7, "type": "reddit"},
+    {"name": "Reddit r/soccer",          "url": "https://www.reddit.com/r/soccer/hot.json?limit=25",          "category": "SPORTS",        "authority": 7, "type": "reddit"},
+    {"name": "Reddit r/technology",      "url": "https://www.reddit.com/r/technology/hot.json?limit=25",      "category": "TECH",          "authority": 7, "type": "reddit"},
+    {"name": "Reddit r/MachineLearning", "url": "https://www.reddit.com/r/MachineLearning/hot.json?limit=25", "category": "TECH",          "authority": 8, "type": "reddit"},
+    {"name": "Reddit r/science",         "url": "https://www.reddit.com/r/science/hot.json?limit=25",         "category": "SCIENCE",       "authority": 7, "type": "reddit"},
+    {"name": "Reddit r/investing",       "url": "https://www.reddit.com/r/investing/hot.json?limit=25",       "category": "FINANCE",       "authority": 6, "type": "reddit"},
+    {"name": "Reddit r/movies",          "url": "https://www.reddit.com/r/movies/hot.json?limit=25",          "category": "ENTERTAINMENT", "authority": 6, "type": "reddit"},
+    {"name": "Reddit r/todayilearned",   "url": "https://www.reddit.com/r/todayilearned/hot.json?limit=25",   "category": "EXPLORE",       "authority": 7, "type": "reddit"},
 ]
 
 
 # ── Category classifier ────────────────────────────────────────────────────────
-
-# Sources in _NICHE publish off-topic content — require keyword confirmation.
-# If no keyword matches, fall back to GEO-POLITICAL instead of source category.
-# Only SPORTS and GEO-POLITICAL are trusted enough to use as a raw fallback.
-_NICHE = {
-    'TECH', 'FINANCE', 'HEALTH', 'SCIENCE',
-    'FASHION', 'ENTERTAINMENT', 'EXPLORE', 'NATURE',
-    'INDIA', 'POLITICS',
-}
+# Follows the guide exactly:
+#   Step 1 — categoriesFromSource: map RSS <category> tags → internal category
+#   Step 2 — keyword scoring: score title+desc, pick highest if threshold met
+#   Step 3 — source category: definitive for sectional feeds; GEO-POLITICAL otherwise
 
 # Map RSS <category> / <tag> terms → internal categories (lowercase keys)
 _RSS_CAT_MAP = {
-    'technology': 'TECH',         'tech': 'TECH',        'science & technology': 'TECH',
-    'gadgets': 'TECH',            'computing': 'TECH',   'internet': 'TECH',
-    'business': 'FINANCE',        'finance': 'FINANCE',  'economy': 'FINANCE',
-    'markets': 'FINANCE',         'investing': 'FINANCE','money': 'FINANCE',
-    'sports': 'SPORTS',           'sport': 'SPORTS',     'cricket': 'SPORTS',
-    'football': 'SPORTS',         'soccer': 'SPORTS',    'tennis': 'SPORTS',
-    'health': 'HEALTH',           'medicine': 'HEALTH',  'wellness': 'HEALTH',
+    'technology': 'TECH',         'tech': 'TECH',          'science & technology': 'TECH',
+    'gadgets': 'TECH',            'computing': 'TECH',      'internet': 'TECH',
+    'business': 'FINANCE',        'finance': 'FINANCE',     'economy': 'FINANCE',
+    'markets': 'FINANCE',         'investing': 'FINANCE',   'money': 'FINANCE',
+    'sports': 'SPORTS',           'sport': 'SPORTS',        'cricket': 'SPORTS',
+    'football': 'SPORTS',         'soccer': 'SPORTS',       'tennis': 'SPORTS',
+    'health': 'HEALTH',           'medicine': 'HEALTH',     'wellness': 'HEALTH',
     'medical': 'HEALTH',
-    'science': 'SCIENCE',         'space': 'SCIENCE',    'environment': 'SCIENCE',
-    'climate': 'SCIENCE',
+    'science': 'SCIENCE',         'space': 'SCIENCE',       'environment': 'SCIENCE',
+    'climate': 'SCIENCE',         'sci-tech': 'TECH',
     'entertainment': 'ENTERTAINMENT', 'arts': 'ENTERTAINMENT', 'movies': 'ENTERTAINMENT',
     'music': 'ENTERTAINMENT',     'television': 'ENTERTAINMENT', 'film': 'ENTERTAINMENT',
-    'fashion': 'FASHION',         'style': 'FASHION',    'beauty': 'FASHION',
+    'fashion': 'FASHION',         'style': 'FASHION',       'beauty': 'FASHION',
     'politics': 'POLITICS',       'government': 'POLITICS', 'world politics': 'POLITICS',
-    'india': 'INDIA',             'nation': 'INDIA',     'national': 'INDIA',
-    'nature': 'NATURE',           'wildlife': 'NATURE',  'ocean': 'NATURE',
+    'india': 'INDIA',             'nation': 'INDIA',        'national': 'INDIA',
+    'nature': 'NATURE',           'wildlife': 'NATURE',     'ocean': 'NATURE',
     'world': 'GEO-POLITICAL',     'international': 'GEO-POLITICAL', 'global': 'GEO-POLITICAL',
-    'travel': 'EXPLORE',          'history': 'EXPLORE',  'culture': 'EXPLORE',
+    'travel': 'EXPLORE',          'history': 'EXPLORE',     'culture': 'EXPLORE',
 }
 
-# Keyword lists per category — whole-word matched, scored across all categories
-_KW = {
-    # Only use words that ARE THE TOPIC, not words that appear incidentally in any story.
-    # Bad: "hospital" (crime stories set in hospitals), "doctor" (any person story),
-    #      "earthquake" (appears in political speeches), "actor" (crime/politics).
-    # Good: "vaccine", "ipl", "nasdaq" — these only appear when the topic IS that category.
+# Keyword sets per category — substring matched, scored
+_KW: dict[str, list[str]] = {
     'SPORTS': [
         'cricket', 'football', 'soccer', 'tennis', 'golf', 'basketball', 'hockey',
-        'rugby', 'olympic', 'olympics', 'ipl', 'fifa', 'wimbledon', 'formula 1',
-        'grand prix', 'batsman', 'bowler', 'wicket', 'wicketkeeper', 'innings',
-        'odi', 't20', 'test match', 'world cup cricket', 'hat-trick', 'penalty shootout',
-        'offside', 'slam dunk', 'birdie', 'bogey', 'premier league', 'la liga',
-        'bundesliga', 'transfer window', 'nba', 'nfl', 'mlb', 'nhl', 'ufc',
-        'badminton', 'table tennis', 'run chase', 'powerplay', 'over-by-over',
-        'match report', 'match preview', 'test series', 'series win', 'series loss',
-        'century stand', 'double century', 'half century', 'bowling figures',
+        'rugby', 'olympic', 'ipl', 'fifa', 'wimbledon', 'formula 1', 'grand prix',
+        'batsman', 'bowler', 'wicket', 'innings', 'odi', 't20', 'test match',
+        'hat-trick', 'penalty shootout', 'premier league', 'la liga', 'bundesliga',
+        'transfer window', 'nba', 'nfl', 'mlb', 'nhl', 'ufc', 'badminton',
+        'world cup cricket', 'match report', 'test series', 'series win',
     ],
     'TECH': [
         'artificial intelligence', 'machine learning', 'chatgpt', 'openai', 'gemini',
         'claude ai', 'llm', 'large language model', 'robotics', 'semiconductor',
-        'gpu', 'nvidia', 'iphone launch', 'android update', 'cybersecurity',
-        'data breach', 'ransomware', 'quantum computing', 'drone technology',
-        'silicon valley', 'deep learning', 'neural network', 'tech layoffs',
-        'software engineer', 'cloud computing', 'generative ai', 'microsoft azure',
-        'apple inc', 'google deepmind', 'anthropic', 'startup funding',
-        'series a funding', 'series b funding', 'saas', 'open source software',
-        'autonomous vehicle', 'self-driving car', 'augmented reality', 'virtual reality',
-        'blockchain', 'zero-day', 'malware', 'phishing attack',
-        'tech giant', 'big tech', 'elon musk', 'sam altman', 'sundar pichai',
-        'mark zuckerberg', 'programming language', 'developer tools', 'api launch',
+        'gpu', 'nvidia', 'cybersecurity', 'data breach', 'ransomware',
+        'quantum computing', 'silicon valley', 'deep learning', 'neural network',
+        'cloud computing', 'generative ai', 'microsoft azure', 'google deepmind',
+        'anthropic', 'startup funding', 'saas', 'open source software',
+        'autonomous vehicle', 'self-driving car', 'augmented reality', 'blockchain',
+        'zero-day', 'malware', 'phishing attack', 'tech giant', 'big tech',
+        'sam altman', 'sundar pichai', 'programming language', 'developer tools',
     ],
     'FINANCE': [
         'stock market', 'share price', 'gdp growth', 'inflation rate', 'recession',
         'interest rate', 'central bank', 'rbi rate', 'federal reserve', 'rate hike',
-        'budget deficit', 'earnings report', 'ipo listing', 'nifty', 'sensex',
-        'nasdaq', 'dow jones', 'cryptocurrency', 'bitcoin price', 'ethereum',
-        'trade deficit', 'tariff hike', 'merger deal', 'acquisition deal',
-        'quarterly results', 'revenue growth', 'net profit', 'market cap',
-        'hedge fund', 'venture capital', 'private equity', 'bond yield', 'forex',
+        'earnings report', 'ipo listing', 'nifty', 'sensex', 'nasdaq', 'dow jones',
+        'cryptocurrency', 'bitcoin price', 'ethereum', 'trade deficit', 'tariff hike',
+        'merger deal', 'acquisition deal', 'quarterly results', 'revenue growth',
+        'net profit', 'market cap', 'hedge fund', 'venture capital', 'bond yield',
         'q1 results', 'q2 results', 'q3 results', 'q4 results', 'earnings call',
-        'fiscal year', 'ebitda', 'mutual fund', 'dividend payout',
-        'shares rally', 'shares fall', 'oil prices', 'gold price', 'crude oil',
-        'sebi', 'financial results', 'profit rises', 'profit falls',
-        'economic growth', 'trade war', 'import duty', 'export ban',
-        'ipo price', 'listing gain', 'stock rally', 'market crash',
+        'fiscal year', 'ebitda', 'mutual fund', 'dividend payout', 'oil prices',
+        'gold price', 'crude oil', 'sebi', 'financial results', 'stock rally',
+        'market crash', 'economic growth', 'trade war',
     ],
     'HEALTH': [
-        # Only use words that are the health topic itself — never incidental settings
         'vaccine rollout', 'vaccination drive', 'covid', 'cancer treatment',
         'cancer diagnosis', 'clinical trial', 'mental health crisis', 'obesity epidemic',
         'diabetes treatment', 'heart disease', 'cardiac arrest', 'cdc', 'fda approval',
         'drug approval', 'antibiotic resistance', 'public health emergency',
         'blood pressure treatment', 'chemotherapy', 'organ transplant', 'pathogen',
         'dengue outbreak', 'malaria outbreak', 'tuberculosis', 'hiv treatment',
-        'pharmaceutical company', 'drug trial', 'side effects', 'health ministry alert',
-        'disease outbreak', 'epidemic', 'pandemic', 'virus outbreak', 'mpox',
-        'monkeypox', 'genome therapy', 'medical breakthrough',
-        'health insurance', 'healthcare reform', 'medical college',
-        'ayushman bharat', 'pmjay', 'aiims',
+        'pharmaceutical company', 'drug trial', 'disease outbreak', 'epidemic',
+        'pandemic', 'virus outbreak', 'mpox', 'monkeypox', 'genome therapy',
+        'medical breakthrough', 'health insurance', 'healthcare reform',
     ],
     'SCIENCE': [
         'nasa', 'space mission', 'asteroid', 'comet', 'galaxy', 'telescope',
@@ -212,9 +218,8 @@ _KW = {
         'scientific discovery', 'carbon emission', 'renewable energy', 'nuclear fusion',
         'particle physics', 'evolution', 'spacex', 'rocket launch', 'space station',
         'dark matter', 'exoplanet', 'climate change study', 'ozone layer',
-        'neutron star', 'cern', 'quantum entanglement', 'big bang', 'gravitational wave',
-        'mars mission', 'moon mission', 'satellite launch', 'isro launch',
-        'new species', 'scientific research', 'physics experiment',
+        'neutron star', 'cern', 'gravitational wave', 'mars mission', 'moon mission',
+        'satellite launch', 'isro launch', 'new species', 'scientific research',
     ],
     'NATURE': [
         'marine life', 'coral reef', 'wildlife conservation', 'extinction threat',
@@ -224,17 +229,15 @@ _KW = {
         'sea level rise', 'glacier melting', 'rainforest', 'migratory bird',
         'tiger reserve', 'mangrove', 'wetland conservation', 'nature reserve',
         'species discovery', 'animal rescue', 'ocean pollution', 'plastic pollution',
-        'flood devastation', 'earthquake damage', 'drought relief',
     ],
     'ENTERTAINMENT': [
         'film festival', 'box office collection', 'netflix series', 'disney plus',
         'amazon prime video', 'hbo series', 'grammy award', 'oscar award',
         'bafta award', 'emmy award', 'bollywood film', 'hollywood film',
         'music album release', 'concert tour', 'film review', 'movie release',
-        'web series', 'season finale', 'music video', 'stand-up comedy',
-        'sitcom', 'blockbuster film', 'movie trailer', 'ott release',
-        'box office hit', 'box office flop', 'streaming platform',
-        'song release', 'album launch', 'music chart',
+        'web series', 'season finale', 'music video', 'blockbuster film',
+        'movie trailer', 'ott release', 'streaming platform', 'song release',
+        'album launch', 'music chart',
     ],
     'FASHION': [
         'fashion week', 'runway show', 'haute couture', 'fashion designer',
@@ -250,20 +253,17 @@ _KW = {
         'andhra pradesh', 'telangana', 'assam', 'narendra modi', 'bjp',
         'aam aadmi party', 'trinamool', 'lok sabha', 'rajya sabha', 'bcci',
         'supreme court of india', 'indian army', 'indian economy',
-        'indian railways', 'maharashtra', 'karnataka', 'himachal pradesh',
-        'uttarakhand', 'jharkhand', 'chhattisgarh', 'manipur',
-        'bombay high court', 'niti aayog', 'election commission of india',
-        'upi payment', 'make in india', 'india gdp', 'india inflation',
+        'indian railways', 'maharashtra', 'karnataka', 'manipur',
+        'niti aayog', 'election commission of india', 'upi payment',
     ],
     'POLITICS': [
-        'election result', 'presidential election', 'prime minister', 'senate vote',
+        'election result', 'presidential election', 'senate vote',
         'parliament session', 'democrat', 'republican', 'trump', 'biden',
         'kamala harris', 'ballot', 'election campaign', 'sanctions imposed',
         'nato summit', 'united nations', 'un security council',
         'g7 summit', 'g20 summit', 'ceasefire deal', 'coup attempt',
         'referendum', 'legislation passed', 'foreign policy', 'geopolitics',
-        'political party', 'civil war', 'peace talks', 'diplomatic visit',
-        'head of state', 'prime minister visit', 'state visit', 'war escalation',
+        'civil war', 'peace talks', 'diplomatic visit', 'war escalation',
         'opposition leader', 'ruling party', 'coalition government',
     ],
     'EXPLORE': [
@@ -275,19 +275,12 @@ _KW = {
     ],
 }
 
-# Pre-compile all patterns for performance
-_KW_PATTERNS = {
-    cat: [re.compile(r'\b' + re.escape(kw) + r'\b') for kw in kws]
-    for cat, kws in _KW.items()
-}
 
-
-def _rss_category(entry) -> str:
-    """Extract the best matching category from RSS <category> tags."""
+def _map_rss_tags(entry) -> str:
+    """Step 1: map RSS <category> tags to an internal category. Returns '' if none match."""
     tags = getattr(entry, 'tags', []) or []
     for tag in tags:
         term = (tag.get('term') or tag.get('label') or '').lower().strip()
-        # Try full term first, then each word in the term
         if term in _RSS_CAT_MAP:
             return _RSS_CAT_MAP[term]
         for word in term.split():
@@ -296,38 +289,47 @@ def _rss_category(entry) -> str:
     return ''
 
 
-def _score_text(text: str) -> dict:
-    """Score text against all category keyword patterns. Returns {cat: score}."""
-    return {
-        cat: sum(1 for p in patterns if p.search(text))
-        for cat, patterns in _KW_PATTERNS.items()
-    }
+def _keyword_score(text: str) -> tuple[str, int]:
+    """Step 2: score text against all categories. Returns (best_cat, best_score)."""
+    best_cat, best_score = '', 0
+    others_have_score = False
+    scores = {}
+    for cat, words in _KW.items():
+        s = sum(1 for w in words if w in text)
+        scores[cat] = s
+        if s > best_score:
+            best_score = s
+            best_cat = cat
+    # Count categories besides best that also scored > 0
+    others_have_score = any(s > 0 for c, s in scores.items() if c != best_cat)
+    # Threshold: ≥ 2 matches, OR only winner with ≥ 1 match
+    if best_score >= 2 or (best_score == 1 and not others_have_score):
+        return best_cat, best_score
+    return '', 0
 
 
 def classify_category(title: str, desc: str, source_category: str,
-                       rss_category: str = '') -> str:
+                       rss_tags_entry=None) -> str:
     """
-    Three-pass classifier:
-      1. RSS <category> tags — only accepted if keyword scoring CONFIRMS the tag
-         (publishers frequently mis-tag e.g. hospital-escape stories as 'health')
-      2. Score-based keyword matching on title + description — picks highest scorer
-      3. Tiered fallback: niche sources → GEO-POLITICAL, core → source category
+    Guide-exact classifier:
+      Step 1 — categoriesFromSource: use RSS <category> tags if they map cleanly
+      Step 2 — keyword scoring: threshold ≥ 2, or sole scorer with ≥ 1
+      Step 3 — source category (authoritative for sectional feeds)
     """
+    # Step 1: source category tags
+    if rss_tags_entry is not None:
+        mapped = _map_rss_tags(rss_tags_entry)
+        if mapped:
+            return mapped
+
+    # Step 2: keyword scoring
     text = (title + ' ' + desc).lower()
-    scores = _score_text(text)
-    best_cat   = max(scores, key=scores.get) if scores else ''
-    best_score = scores.get(best_cat, 0)
+    cat, score = _keyword_score(text)
+    if cat:
+        return cat
 
-    # Pass 1 — accept RSS tag only if keyword scoring agrees (same category wins)
-    if rss_category and best_score >= 1 and best_cat == rss_category:
-        return rss_category
-
-    # Pass 2 — keyword scoring alone
-    if best_score >= 1:
-        return best_cat
-
-    # Pass 3 — tiered fallback
-    return 'GEO-POLITICAL' if source_category in _NICHE else source_category
+    # Step 3: source category is the authoritative fallback for sectional feeds
+    return source_category
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
@@ -377,10 +379,9 @@ def fetch_rss(source: dict) -> list:
             if len(desc) > 300:
                 desc = desc[:300].rsplit(' ', 1)[0] + '…'
             src_cat = source.get('category', 'GEO-POLITICAL')
-            rss_cat = _rss_category(entry)
             out.append({
                 'id': make_id(url), 'title': title, 'url': url,
-                'source': source['name'], 'category': classify_category(title, desc, src_cat, rss_cat),
+                'source': source['name'], 'category': classify_category(title, desc, src_cat, entry),
                 'authority': source.get('authority', 5),
                 'published': pub.isoformat(), 'published_ts': pub.timestamp(),
                 'cross_source_count': 1,
@@ -416,7 +417,7 @@ def fetch_reddit(source: dict) -> list:
             selftext = p.get('selftext', '')[:300] or ''
             out.append({
                 'id': make_id(url), 'title': title, 'url': url,
-                'source': source['name'], 'category': classify_category(title, selftext, src_cat),
+                'source': source['name'], 'category': classify_category(title, selftext, src_cat, None),
                 'authority': authority,
                 'published': datetime.fromtimestamp(pub_ts).isoformat(),
                 'published_ts': pub_ts,

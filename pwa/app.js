@@ -379,9 +379,11 @@ function updateTopCard() {
     if (topCard) topCard.classList.add('top-card');
 }
 
-window.addEventListener('scroll', () => requestAnimationFrame(updateTopCard), { passive: true });
+window.addEventListener('scroll',   () => requestAnimationFrame(updateTopCard), { passive: true });
+document.addEventListener('scroll', () => requestAnimationFrame(updateTopCard), { passive: true });
 
 // ── Boot ───────────────────────────────────────────────────
 
 fetchHeadlines();
 setInterval(fetchHeadlines, POLL_MS);
+setTimeout(updateTopCard, 3000); // fallback in case scroll never fires

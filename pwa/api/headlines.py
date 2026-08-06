@@ -72,13 +72,31 @@ SOURCES = [
     {"name": "New Scientist",    "url": "https://www.newscientist.com/feed/home/",                               "category": "SCIENCE",       "authority": 9},
     {"name": "BBC Science",      "url": "https://feeds.bbci.co.uk/news/science_and_environment/rss.xml",         "category": "SCIENCE",       "authority": 9},
     {"name": "Phys.org",         "url": "https://phys.org/rss-feed/",                                           "category": "SCIENCE",       "authority": 9},
-    # QUIZ
-    {"name": "Atlas Obscura",    "url": "https://www.atlasobscura.com/feeds/latest",                             "category": "QUIZ",          "authority": 9},
-    {"name": "Smithsonian",      "url": "https://www.smithsonianmag.com/rss/latest_articles/",                   "category": "QUIZ",          "authority": 9},
-    {"name": "Big Think",        "url": "https://bigthink.com/feed/",                                            "category": "QUIZ",          "authority": 8},
-    # OCEAN
-    {"name": "NOAA",             "url": "https://www.noaa.gov/feed/",                                            "category": "OCEAN",         "authority": 10},
-    {"name": "Maritime Exec",    "url": "https://maritime-executive.com/rss/",                                   "category": "OCEAN",         "authority": 9},
+    # EXPLORE (was QUIZ)
+    {"name": "Atlas Obscura",    "url": "https://www.atlasobscura.com/feeds/latest",                             "category": "EXPLORE",       "authority": 9},
+    {"name": "Smithsonian",      "url": "https://www.smithsonianmag.com/rss/latest_articles/",                   "category": "EXPLORE",       "authority": 9},
+    {"name": "Big Think",        "url": "https://bigthink.com/feed/",                                            "category": "EXPLORE",       "authority": 8},
+    # NATURE (was OCEAN)
+    {"name": "NOAA",             "url": "https://www.noaa.gov/feed/",                                            "category": "NATURE",        "authority": 10},
+    {"name": "Maritime Exec",    "url": "https://maritime-executive.com/rss/",                                   "category": "NATURE",        "authority": 9},
+    # HEALTH
+    {"name": "WHO",              "url": "https://www.who.int/rss-feeds/news-english.xml",                        "category": "HEALTH",        "authority": 10},
+    {"name": "Medical News Today","url":"https://www.medicalnewstoday.com/rss/news",                             "category": "HEALTH",        "authority": 9},
+    {"name": "Healthline",       "url": "https://www.healthline.com/rss/news",                                   "category": "HEALTH",        "authority": 8},
+    # POLITICS
+    {"name": "Politico",         "url": "https://www.politico.com/rss/politics08.xml",                          "category": "POLITICS",      "authority": 9},
+    {"name": "The Hill",         "url": "https://thehill.com/rss/syndicator/19110",                             "category": "POLITICS",      "authority": 8},
+    {"name": "The Atlantic",     "url": "https://www.theatlantic.com/feed/all/",                                 "category": "POLITICS",      "authority": 9},
+    # INDIA
+    {"name": "Times of India",   "url": "https://timesofindia.indiatimes.com/rssfeedstopstories.cms",           "category": "INDIA",         "authority": 9},
+    {"name": "The Hindu",        "url": "https://www.thehindu.com/feeder/default.rss",                          "category": "INDIA",         "authority": 9},
+    {"name": "Indian Express",   "url": "https://indianexpress.com/feed/",                                      "category": "INDIA",         "authority": 9},
+    {"name": "NDTV",             "url": "https://feeds.feedburner.com/ndtvnews-top-stories",                    "category": "INDIA",         "authority": 8},
+    {"name": "Hindustan Times",  "url": "https://www.hindustantimes.com/feeds/rss/india-news/rssfeed.xml",      "category": "INDIA",         "authority": 8},
+    # FASHION
+    {"name": "Vogue",            "url": "https://www.vogue.com/feed/rss",                                       "category": "FASHION",       "authority": 10},
+    {"name": "Harper's Bazaar",  "url": "https://www.harpersbazaar.com/rss/all.xml",                            "category": "FASHION",       "authority": 9},
+    {"name": "Elle",             "url": "https://www.elle.com/rss/all.xml",                                     "category": "FASHION",       "authority": 9},
     # REDDIT
     {"name": "Reddit r/worldnews",       "url": "https://www.reddit.com/r/worldnews/hot.json?limit=25",       "category": "GEO-POLITICAL", "authority": 7, "type": "reddit"},
     {"name": "Reddit r/geopolitics",     "url": "https://www.reddit.com/r/geopolitics/hot.json?limit=25",    "category": "GEO-POLITICAL", "authority": 7, "type": "reddit"},

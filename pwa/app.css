@@ -9,6 +9,7 @@
   --muted:   #3a5a70;
   --secondary: #5a7a8a;
   --bar-h:   52px;
+  --cat-h:   40px;
 }
 
 html, body {
@@ -85,7 +86,7 @@ html, body {
 /* ── Feed ─────────────────────────────────────────────────── */
 #feed {
   padding-top: 38px;
-  padding-bottom: calc(var(--bar-h) + 16px);
+  padding-bottom: calc(var(--bar-h) + var(--cat-h) + 16px);
   min-height: 100vh;
 }
 
@@ -191,7 +192,7 @@ html, body {
 /* ── Search bar ───────────────────────────────────────────── */
 #search-bar {
   position: fixed;
-  bottom: var(--bar-h);
+  bottom: var(--cat-h);
   left: 0; right: 0;
   background: var(--card);
   border-top: 0.5px solid var(--border);
@@ -212,10 +213,48 @@ html, body {
 }
 #search-input::placeholder { color: var(--muted); }
 
+/* ── Category bar ─────────────────────────────────────────── */
+#cat-bar {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  height: var(--cat-h);
+  background: #0a1220;
+  border-top: 0.5px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 10px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  z-index: 30;
+  -webkit-overflow-scrolling: touch;
+}
+#cat-bar::-webkit-scrollbar { display: none; }
+.cat-tab {
+  flex-shrink: 0;
+  background: none;
+  border: 0.5px solid var(--border);
+  border-radius: 14px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 4px 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+}
+.cat-tab.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #080c12;
+}
+
 /* ── Install banner ───────────────────────────────────────── */
 #install-banner {
   position: fixed;
-  bottom: var(--bar-h);
+  bottom: var(--cat-h);
   left: 0; right: 0;
   background: var(--card);
   border-top: 0.5px solid var(--accent);
@@ -244,6 +283,7 @@ html, body {
 
 /* ── Action bar ───────────────────────────────────────────── */
 #btn-search { display: none; }
+#action-bar { display: none; }
 
 #action-bar {
   position: fixed;

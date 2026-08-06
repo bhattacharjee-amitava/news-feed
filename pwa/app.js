@@ -43,8 +43,9 @@ function makeCard(h) {
     const div   = document.createElement('div');
     div.className      = 'card';
     div.dataset.id     = h.id;
-    div.dataset.source = (h.source || '').toLowerCase();
-    div.dataset.title  = (h.title  || '').toLowerCase();
+    div.dataset.source   = (h.source   || '').toLowerCase();
+    div.dataset.title    = (h.title    || '').toLowerCase();
+    div.dataset.category = (h.category || '').toLowerCase();
     div.innerHTML = `
       <div class="card-meta">
         <span class="source-tag">${esc(h.source)}</span>
@@ -234,6 +235,43 @@ async function fetchLive(q) {
         document.getElementById('search-not-found').classList.remove('hidden');
     }
 }
+
+// ── Category filter ────────────────────────────────────────
+
+let activeCategory = 'all';
+
+const CATEGORY_MAP = {
+    'all': null,
+    'world': 'geo-political',
+    'sports': 'sports',
+    'tech': 'tech',
+    'finance': 'finance',
+    'science': 'science',
+    'entertainment': 'entertainment',
+    'explore': 'explore',
+    'nature': 'nature',
+    'health': 'health',
+    'politics': 'politics',
+    'india': 'india',
+    'fashion': 'fashion',
+};
+
+function applyCategory(cat) {
+    activeCategory = cat;
+    document.querySelectorAll('.cat-tab').forEach(b =>
+        b.classList.toggle('active', b.dataset.cat === cat)
+    );
+    const filter = CATEGORY_MAP[cat];
+    document.querySelectorAll('.card').forEach(c => {
+        if (!filter) { c.style.display = ''; return; }
+        c.style.display = c.dataset.category === filter ? '' : 'none';
+    });
+    updateTopCard();
+}
+
+document.querySelectorAll('.cat-tab').forEach(btn =>
+    btn.addEventListener('click', () => applyCategory(btn.dataset.cat))
+);
 
 // ── Language switcher ──────────────────────────────────────
 

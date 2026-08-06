@@ -11,5 +11,11 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
-    e.respondWith(fetch(e.request));
+    // Force bypass of HTTP cache for all same-origin GET requests
+    const url = new URL(e.request.url);
+    if (e.request.method === 'GET' && url.origin === self.location.origin) {
+        e.respondWith(fetch(e.request, { cache: 'no-store' }));
+    } else {
+        e.respondWith(fetch(e.request));
+    }
 });

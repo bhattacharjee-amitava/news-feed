@@ -277,10 +277,7 @@ def serve_file(h, rel_path: str):
         h.send_response(200)
         h.send_header('Content-Type',   mime)
         h.send_header('Content-Length', str(len(body)))
-        if no_cache:
-            h.send_header('Cache-Control', 'no-store')
-        else:
-            h.send_header('Cache-Control', 'public, max-age=3600')
+        h.send_header('Cache-Control', 'no-store')
         h.end_headers()
         h.wfile.write(body)
     except Exception:

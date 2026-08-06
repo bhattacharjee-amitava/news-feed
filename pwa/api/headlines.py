@@ -296,26 +296,34 @@ def _rss_category(entry) -> str:
     return ''
 
 
+def _score_text(text: str) -> dict:
+    """Score text against all category keyword patterns. Returns {cat: score}."""
+    return {
+        cat: sum(1 for p in patterns if p.search(text))
+        for cat, patterns in _KW_PATTERNS.items()
+    }
+
+
 def classify_category(title: str, desc: str, source_category: str,
                        rss_category: str = '') -> str:
     """
     Three-pass classifier:
-      1. RSS <category> tags from the feed (most reliable signal)
+      1. RSS <category> tags — only accepted if keyword scoring CONFIRMS the tag
+         (publishers frequently mis-tag e.g. hospital-escape stories as 'health')
       2. Score-based keyword matching on title + description — picks highest scorer
       3. Tiered fallback: niche sources → GEO-POLITICAL, core → source category
     """
-    # Pass 1 — trust RSS-provided category tag
-    if rss_category:
+    text = (title + ' ' + desc).lower()
+    scores = _score_text(text)
+    best_cat   = max(scores, key=scores.get) if scores else ''
+    best_score = scores.get(best_cat, 0)
+
+    # Pass 1 — accept RSS tag only if keyword scoring agrees (same category wins)
+    if rss_category and best_score >= 1 and best_cat == rss_category:
         return rss_category
 
-    # Pass 2 — score every category; pick highest with at least 1 hit
-    text = (title + ' ' + desc).lower()
-    best_cat, best_score = '', 0
-    for cat, patterns in _KW_PATTERNS.items():
-        score = sum(1 for p in patterns if p.search(text))
-        if score > best_score:
-            best_score, best_cat = score, cat
-    if best_cat:
+    # Pass 2 — keyword scoring alone
+    if best_score >= 1:
         return best_cat
 
     # Pass 3 — tiered fallback

@@ -128,6 +128,13 @@ html, body {
   transition: background 0.12s;
 }
 .card:active { background: var(--card); }
+.card.top-card {
+  background: rgba(0, 201, 167, 0.10);
+  border-left: 2px solid var(--accent);
+}
+.card.top-card .headline {
+  font-size: 17px;
+}
 
 .card-meta {
   display: flex;

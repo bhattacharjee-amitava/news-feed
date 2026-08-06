@@ -129,7 +129,7 @@ html, body {
 }
 .card:active { background: var(--card); }
 .card.top-card .headline {
-  font-size: 22px;
+  font-size: 18px;
   color: #1a8cff;
 }
 

@@ -33,6 +33,9 @@ html, body {
   align-items: center;
   gap: 8px;
   z-index: 5;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  will-change: transform;
 }
 .strip-dot { color: var(--border); }
 

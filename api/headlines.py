@@ -8,6 +8,7 @@ from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from urllib.parse import urlparse, parse_qs, quote
 
+import re
 import feedparser
 import requests
 
@@ -112,87 +113,202 @@ SOURCES = [
 ]
 
 
-# ── Keyword-based category classifier ─────────────────────────────────────────
+# ── Category classifier ────────────────────────────────────────────────────────
 
-import re as _re
+# Sources in _NICHE publish off-topic content — require keyword confirmation.
+# If no keyword matches, fall back to GEO-POLITICAL instead of source category.
+# Only SPORTS and GEO-POLITICAL are trusted enough to use as a raw fallback.
+_NICHE = {
+    'TECH', 'FINANCE', 'HEALTH', 'SCIENCE',
+    'FASHION', 'ENTERTAINMENT', 'EXPLORE', 'NATURE',
+    'INDIA', 'POLITICS',
+}
 
-# Niche categories: fall back to GEO-POLITICAL if no keyword matches.
-# Core categories: fall back to source category if no keyword matches.
-_NICHE = {'FASHION', 'ENTERTAINMENT', 'EXPLORE', 'NATURE'}
+# Map RSS <category> / <tag> terms → internal categories (lowercase keys)
+_RSS_CAT_MAP = {
+    'technology': 'TECH',         'tech': 'TECH',        'science & technology': 'TECH',
+    'gadgets': 'TECH',            'computing': 'TECH',   'internet': 'TECH',
+    'business': 'FINANCE',        'finance': 'FINANCE',  'economy': 'FINANCE',
+    'markets': 'FINANCE',         'investing': 'FINANCE','money': 'FINANCE',
+    'sports': 'SPORTS',           'sport': 'SPORTS',     'cricket': 'SPORTS',
+    'football': 'SPORTS',         'soccer': 'SPORTS',    'tennis': 'SPORTS',
+    'health': 'HEALTH',           'medicine': 'HEALTH',  'wellness': 'HEALTH',
+    'medical': 'HEALTH',
+    'science': 'SCIENCE',         'space': 'SCIENCE',    'environment': 'SCIENCE',
+    'climate': 'SCIENCE',
+    'entertainment': 'ENTERTAINMENT', 'arts': 'ENTERTAINMENT', 'movies': 'ENTERTAINMENT',
+    'music': 'ENTERTAINMENT',     'television': 'ENTERTAINMENT', 'film': 'ENTERTAINMENT',
+    'fashion': 'FASHION',         'style': 'FASHION',    'beauty': 'FASHION',
+    'politics': 'POLITICS',       'government': 'POLITICS', 'world politics': 'POLITICS',
+    'india': 'INDIA',             'nation': 'INDIA',     'national': 'INDIA',
+    'nature': 'NATURE',           'wildlife': 'NATURE',  'ocean': 'NATURE',
+    'world': 'GEO-POLITICAL',     'international': 'GEO-POLITICAL', 'global': 'GEO-POLITICAL',
+    'travel': 'EXPLORE',          'history': 'EXPLORE',  'culture': 'EXPLORE',
+}
 
-_KW: list[tuple[str, list[str]]] = [
-    ('SPORTS',        ['cricket', 'football', 'soccer', 'tennis', 'golf', 'basketball', 'hockey',
-                       'rugby', 'olympic', 'olympics', 'ipl', 'fifa', 'wimbledon', 'formula 1',
-                       'grand prix', 'tournament', 'championship', 'batsman', 'bowler', 'wicket',
-                       'semifinal', 'medal', 'athlete', 'stadium', 'squad', 'innings', 'odi',
-                       't20', 'test match', 'world cup', 'jersey', 'referee', 'wicketkeeper',
-                       'century', 'hat-trick', 'penalty', 'offside', 'dribble', 'slam dunk',
-                       'serve', 'deuce', 'putt', 'birdie', 'bogey', 'touchdowns', 'inning']),
-    ('TECH',          ['artificial intelligence', 'chatgpt', 'openai', 'gemini', 'llm',
-                       'machine learning', 'robot', 'robotics', 'semiconductor', 'gpu',
-                       'nvidia', 'iphone', 'android', 'cybersecurity', 'data breach',
-                       'algorithm', 'quantum computing', 'biotech', 'drone', 'smartphone',
-                       'silicon valley', 'deep learning', 'neural network', 'tech layoffs',
-                       'software engineer', 'cloud computing', 'generative ai', 'microsoft',
-                       'apple inc', 'google deepmind', 'anthropic', 'startup funding']),
-    ('FINANCE',       ['stock market', 'share price', 'gdp', 'inflation', 'recession',
-                       'interest rate', 'central bank', 'rbi', 'federal reserve',
-                       'budget deficit', 'earnings report', 'ipo', 'nifty', 'sensex',
-                       'nasdaq', 'dow jones', 'crypto', 'bitcoin', 'trade deficit',
-                       'tariff', 'merger', 'acquisition', 'quarterly results', 'revenue growth',
-                       'net profit', 'market cap', 'hedge fund', 'venture capital',
-                       'private equity', 'bond yield', 'forex', 'commodity prices']),
-    ('HEALTH',        ['virus', 'vaccine', 'covid', 'cancer', 'disease outbreak', 'epidemic',
-                       'pandemic', 'surgery', 'clinical trial', 'mental health', 'obesity',
-                       'diabetes', 'heart disease', 'stroke', 'cdc', 'fda', 'medical research',
-                       'doctor', 'hospital', 'patient', 'drug approval', 'antibiotic',
-                       'nutrition', 'public health', 'health ministry', 'blood pressure',
-                       'chemotherapy', 'organ transplant', 'parasite', 'pathogen']),
-    ('SCIENCE',       ['nasa', 'space mission', 'planet', 'asteroid', 'comet', 'galaxy',
-                       'telescope', 'black hole', 'global warming', 'fossil', 'dinosaur',
-                       'genome', 'physics', 'chemistry', 'biologist', 'scientific',
-                       'experiment', 'carbon emission', 'renewable energy', 'nuclear fusion',
-                       'particle physics', 'evolution', 'spacex', 'rocket launch',
-                       'international space station', 'dark matter', 'exoplanet']),
-    ('NATURE',        ['ocean', 'marine', 'wildlife', 'coral reef', 'extinction',
-                       'biodiversity', 'deforestation', 'conservation', 'national park',
-                       'ecosystem', 'flood warning', 'earthquake', 'cyclone', 'hurricane',
-                       'wildfire', 'drought', 'endangered species', 'poaching', 'reforestation',
-                       'sea level', 'glacier', 'rainforest', 'migratory bird']),
-    ('ENTERTAINMENT', ['film festival', 'box office', 'netflix', 'disney', 'amazon prime',
-                       'hbo', 'streaming', 'grammy', 'oscar', 'bafta', 'emmy', 'bollywood',
-                       'hollywood', 'music album', 'concert tour', 'celebrity', 'box office',
-                       'film review', 'movie release', 'tv series', 'season finale',
-                       'music video', 'stand-up', 'sitcom', 'blockbuster', 'trailer']),
-    ('FASHION',       ['fashion week', 'runway', 'couture', 'fashion designer', 'vogue',
-                       'clothing brand', 'fashion show', 'fashion trend', 'luxury fashion',
-                       'gucci', 'prada', 'louis vuitton', 'chanel', 'dior',
-                       'sustainable fashion', 'streetwear', 'fashion industry']),
-    ('INDIA',         ['india', 'delhi', 'mumbai', 'bengal', 'kolkata', 'gujarat', 'rajasthan',
-                       'kashmir', 'punjab', 'bihar', 'odisha', 'kerala', 'tamil nadu', 'andhra',
-                       'telangana', 'assam', 'narendra modi', 'bjp', 'aap', 'tmc',
-                       'lok sabha', 'rajya sabha', 'bcci', 'supreme court of india',
-                       'indian army', 'indian economy', 'indian railway']),
-    ('POLITICS',      ['election', 'president', 'prime minister', 'senate', 'parliament',
-                       'democrat', 'republican', 'trump', 'biden', 'ballot', 'campaign',
-                       'cabinet minister', 'diplomat', 'sanctions', 'nato', 'united nations',
-                       'g7', 'g20', 'ceasefire', 'coup', 'referendum', 'legislation',
-                       'foreign policy', 'geopolitics', 'political party', 'civil war']),
-    ('EXPLORE',       ['ancient civilization', 'archaeology', 'mythology', 'philosophy',
-                       'unexplained', 'hidden history', 'lost city', 'fascinating fact',
-                       'did you know', 'trivia', 'cultural heritage', 'anthropology',
-                       'linguistic', 'folk tradition', 'exploration', 'adventurer']),
-]
+# Keyword lists per category — whole-word matched, scored across all categories
+_KW = {
+    'SPORTS': [
+        'cricket', 'football', 'soccer', 'tennis', 'golf', 'basketball', 'hockey',
+        'rugby', 'olympic', 'olympics', 'ipl', 'fifa', 'wimbledon', 'formula 1',
+        'grand prix', 'tournament', 'championship', 'batsman', 'bowler', 'wicket',
+        'semifinal', 'medal', 'athlete', 'stadium', 'innings', 'odi', 't20',
+        'test match', 'world cup', 'referee', 'wicketkeeper', 'century', 'hat-trick',
+        'penalty shootout', 'offside', 'slam dunk', 'birdie', 'bogey',
+        'premier league', 'la liga', 'bundesliga', 'series win', 'test series',
+        'run chase', 'transfer window', 'match preview', 'match report',
+        'score', 'batting', 'bowling', 'fielding', 'run rate', 'powerplay',
+        'nba', 'nfl', 'mlb', 'nhl', 'ufc', 'wwe', 'athletics', 'marathon',
+        'swimming', 'badminton', 'table tennis', 'boxing', 'wrestling',
+    ],
+    'TECH': [
+        'artificial intelligence', 'machine learning', 'chatgpt', 'openai', 'gemini',
+        'claude ai', 'llm', 'large language model', 'robotics', 'semiconductor',
+        'gpu', 'nvidia', 'iphone', 'android', 'cybersecurity', 'data breach',
+        'ransomware', 'algorithm', 'quantum computing', 'biotech', 'drone technology',
+        'silicon valley', 'deep learning', 'neural network', 'tech layoffs',
+        'software engineer', 'cloud computing', 'generative ai', 'microsoft azure',
+        'apple inc', 'google deepmind', 'anthropic', 'startup funding',
+        'series a', 'series b', 'saas', 'open source software',
+        'autonomous vehicle', 'self-driving', 'augmented reality', 'virtual reality',
+        'blockchain', 'encryption', 'zero-day', 'malware', 'phishing',
+        'tech giant', 'big tech', 'elon musk', 'sam altman', 'sundar pichai',
+        'mark zuckerberg', 'metaverse', 'programming language', 'developer tools',
+    ],
+    'FINANCE': [
+        'stock market', 'share price', 'gdp', 'inflation rate', 'recession',
+        'interest rate', 'central bank', 'rbi', 'federal reserve', 'rate hike',
+        'budget deficit', 'earnings report', 'ipo listing', 'nifty', 'sensex',
+        'nasdaq', 'dow jones', 'cryptocurrency', 'bitcoin', 'ethereum',
+        'trade deficit', 'tariff', 'merger', 'acquisition', 'quarterly results',
+        'revenue growth', 'net profit', 'market cap', 'hedge fund', 'venture capital',
+        'private equity', 'bond yield', 'forex', 'commodity prices',
+        'q1 results', 'q2 results', 'q3 results', 'q4 results', 'earnings call',
+        'fiscal year', 'balance sheet', 'ebitda', 'mutual fund', 'dividend',
+        'shares rally', 'shares fall', 'oil prices', 'gold price', 'crude oil',
+        'sebi', 'financial results', 'profit rises', 'profit falls', 'revenue',
+        'economic growth', 'trade war', 'import duty', 'export ban',
+    ],
+    'HEALTH': [
+        'virus', 'vaccine', 'covid', 'cancer', 'disease outbreak', 'epidemic',
+        'pandemic', 'surgery', 'clinical trial', 'mental health', 'obesity',
+        'diabetes', 'heart disease', 'cardiac', 'stroke', 'cdc', 'fda',
+        'medical research', 'drug approval', 'antibiotic', 'public health',
+        'health ministry', 'blood pressure', 'chemotherapy', 'organ transplant',
+        'parasite', 'pathogen', 'dengue', 'malaria', 'tuberculosis', 'hiv',
+        'mortality', 'pharmaceutical', 'drug trial', 'side effects',
+        'vaccination', 'immunity', 'infection', 'symptoms', 'treatment',
+        'hospital', 'patient', 'doctor', 'nurse', 'healthcare',
+    ],
+    'SCIENCE': [
+        'nasa', 'space mission', 'planet', 'asteroid', 'comet', 'galaxy',
+        'telescope', 'black hole', 'global warming', 'fossil', 'dinosaur',
+        'genome sequencing', 'physics', 'chemistry', 'scientific discovery',
+        'carbon emission', 'renewable energy', 'nuclear fusion', 'particle physics',
+        'evolution', 'spacex', 'rocket launch', 'space station', 'dark matter',
+        'exoplanet', 'climate change', 'ozone layer', 'solar system', 'neutron star',
+        'cern', 'quantum entanglement', 'big bang', 'gravitational wave',
+        'mars mission', 'moon mission', 'satellite launch', 'isro',
+    ],
+    'NATURE': [
+        'ocean', 'marine life', 'wildlife', 'coral reef', 'extinction',
+        'biodiversity', 'deforestation', 'conservation', 'national park',
+        'ecosystem', 'flood', 'earthquake', 'cyclone', 'hurricane', 'typhoon',
+        'wildfire', 'drought', 'endangered species', 'poaching', 'reforestation',
+        'sea level rise', 'glacier', 'rainforest', 'migratory bird',
+        'tiger reserve', 'mangrove', 'wetland', 'nature reserve',
+        'habitat', 'species discovery', 'animal rescue',
+    ],
+    'ENTERTAINMENT': [
+        'film festival', 'box office', 'netflix', 'disney plus', 'amazon prime video',
+        'hbo', 'grammy', 'oscar', 'bafta', 'emmy award', 'bollywood',
+        'hollywood', 'music album', 'concert tour', 'film review', 'movie release',
+        'tv series', 'season finale', 'music video', 'stand-up comedy',
+        'sitcom', 'blockbuster', 'movie trailer', 'ott release', 'web series',
+        'actress', 'actor', 'director', 'producer', 'box office collection',
+        'streaming platform', 'song release', 'album launch',
+    ],
+    'FASHION': [
+        'fashion week', 'runway show', 'haute couture', 'fashion designer',
+        'fashion show', 'fashion trend', 'luxury fashion', 'luxury brand',
+        'gucci', 'prada', 'louis vuitton', 'chanel', 'dior', 'versace', 'hermes',
+        'sustainable fashion', 'streetwear', 'fashion industry', 'spring collection',
+        'resort collection', 'ready-to-wear', 'fashion house', 'fashion model',
+    ],
+    'INDIA': [
+        'india', 'delhi', 'mumbai', 'bengal', 'kolkata', 'gujarat', 'rajasthan',
+        'kashmir', 'punjab', 'bihar', 'odisha', 'kerala', 'tamil nadu',
+        'andhra pradesh', 'telangana', 'assam', 'narendra modi', 'bjp',
+        'aam aadmi party', 'tmc', 'lok sabha', 'rajya sabha', 'bcci',
+        'supreme court of india', 'indian army', 'indian economy',
+        'indian railway', 'maharashtra', 'karnataka', 'himachal pradesh',
+        'uttarakhand', 'jharkhand', 'chhattisgarh', 'manipur',
+        'up police', 'bombay high court', 'indian rupee', 'niti aayog',
+        'election commission', 'aadhaar', 'upi', 'make in india',
+    ],
+    'POLITICS': [
+        'election result', 'presidential', 'prime minister', 'senate', 'parliament',
+        'democrat', 'republican', 'trump', 'biden', 'kamala harris', 'ballot',
+        'election campaign', 'diplomat', 'sanctions', 'nato', 'united nations',
+        'un security council', 'g7 summit', 'g20 summit', 'ceasefire', 'coup',
+        'referendum', 'legislation', 'foreign policy', 'geopolitics',
+        'political party', 'civil war', 'peace talks', 'head of state',
+        'prime minister visit', 'state visit', 'war', 'conflict', 'protest',
+        'opposition leader', 'ruling party', 'coalition government',
+    ],
+    'EXPLORE': [
+        'ancient civilization', 'archaeology', 'mythology', 'philosophy',
+        'unexplained', 'hidden history', 'lost city', 'fascinating',
+        'did you know', 'cultural heritage', 'anthropology', 'folk tradition',
+        'adventurer', 'bizarre', 'unusual discovery', 'trivia', 'mystery solved',
+        'historical discovery', 'ancient ruins', 'cave painting',
+    ],
+}
 
-def classify_category(title: str, source_category: str) -> str:
-    """Classify by whole-word keyword match; niche categories fall back to GEO-POLITICAL."""
-    t = title.lower()
-    for cat, keywords in _KW:
-        for kw in keywords:
-            # Use word-boundary matching to avoid substring false positives
-            if _re.search(r'\b' + _re.escape(kw) + r'\b', t):
-                return cat
-    # No keyword matched: niche sources default to world, core sources keep their category
+# Pre-compile all patterns for performance
+_KW_PATTERNS = {
+    cat: [re.compile(r'\b' + re.escape(kw) + r'\b') for kw in kws]
+    for cat, kws in _KW.items()
+}
+
+
+def _rss_category(entry) -> str:
+    """Extract the best matching category from RSS <category> tags."""
+    tags = getattr(entry, 'tags', []) or []
+    for tag in tags:
+        term = (tag.get('term') or tag.get('label') or '').lower().strip()
+        # Try full term first, then each word in the term
+        if term in _RSS_CAT_MAP:
+            return _RSS_CAT_MAP[term]
+        for word in term.split():
+            if word in _RSS_CAT_MAP:
+                return _RSS_CAT_MAP[word]
+    return ''
+
+
+def classify_category(title: str, desc: str, source_category: str,
+                       rss_category: str = '') -> str:
+    """
+    Three-pass classifier:
+      1. RSS <category> tags from the feed (most reliable signal)
+      2. Score-based keyword matching on title + description — picks highest scorer
+      3. Tiered fallback: niche sources → GEO-POLITICAL, core → source category
+    """
+    # Pass 1 — trust RSS-provided category tag
+    if rss_category:
+        return rss_category
+
+    # Pass 2 — score every category; pick highest with at least 1 hit
+    text = (title + ' ' + desc).lower()
+    best_cat, best_score = '', 0
+    for cat, patterns in _KW_PATTERNS.items():
+        score = sum(1 for p in patterns if p.search(text))
+        if score > best_score:
+            best_score, best_cat = score, cat
+    if best_cat:
+        return best_cat
+
+    # Pass 3 — tiered fallback
     return 'GEO-POLITICAL' if source_category in _NICHE else source_category
 
 
@@ -243,9 +359,10 @@ def fetch_rss(source: dict) -> list:
             if len(desc) > 300:
                 desc = desc[:300].rsplit(' ', 1)[0] + '…'
             src_cat = source.get('category', 'GEO-POLITICAL')
+            rss_cat = _rss_category(entry)
             out.append({
                 'id': make_id(url), 'title': title, 'url': url,
-                'source': source['name'], 'category': classify_category(title, src_cat),
+                'source': source['name'], 'category': classify_category(title, desc, src_cat, rss_cat),
                 'authority': source.get('authority', 5),
                 'published': pub.isoformat(), 'published_ts': pub.timestamp(),
                 'cross_source_count': 1,
@@ -277,15 +394,16 @@ def fetch_reddit(source: dict) -> list:
             pub_ts    = float(p.get('created_utc', now))
             if (now - pub_ts) > MAX_AGE_SECS:
                 continue
-            src_cat = source.get('category', 'GEO-POLITICAL')
+            src_cat  = source.get('category', 'GEO-POLITICAL')
+            selftext = p.get('selftext', '')[:300] or ''
             out.append({
                 'id': make_id(url), 'title': title, 'url': url,
-                'source': source['name'], 'category': classify_category(title, src_cat),
+                'source': source['name'], 'category': classify_category(title, selftext, src_cat),
                 'authority': authority,
                 'published': datetime.fromtimestamp(pub_ts).isoformat(),
                 'published_ts': pub_ts,
                 'cross_source_count': min(5, max(1, p.get('num_comments', 0) // 200 + 1)),
-                'description': p.get('selftext', '')[:300] or '',
+                'description': selftext,
                 'score': compute_score(authority, pub_ts, now),
             })
         return out

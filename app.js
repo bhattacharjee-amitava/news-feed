@@ -242,18 +242,18 @@ let activeCategory = 'all';
 
 const CATEGORY_MAP = {
     'all': null,
-    'world': 'geo-political',
+    // 'world': 'geo-political',
+    // 'india': 'india',
+    'politics': 'politics',
     'sports': 'sports',
     'tech': 'tech',
     'finance': 'finance',
     'science': 'science',
-    'entertainment': 'entertainment',
-    'explore': 'explore',
-    'nature': 'nature',
     'health': 'health',
-    'politics': 'politics',
-    'india': 'india',
-    'fashion': 'fashion',
+    'entertainment': 'entertainment',
+    // 'fashion': 'fashion',
+    // 'explore': 'explore',
+    'nature': 'nature',
 };
 
 function applyCategory(cat) {
@@ -419,6 +419,20 @@ function updateTopCard() {
 
 window.addEventListener('scroll',   () => requestAnimationFrame(updateTopCard), { passive: true });
 document.addEventListener('scroll', () => requestAnimationFrame(updateTopCard), { passive: true });
+
+// ── Disclaimer ─────────────────────────────────────────────
+
+(function () {
+    if (!sessionStorage.getItem('disclaimer_ok')) {
+        // shown once per session
+    } else {
+        document.getElementById('disclaimer-overlay').classList.add('hidden');
+    }
+    document.getElementById('disclaimer-ok').addEventListener('click', () => {
+        sessionStorage.setItem('disclaimer_ok', '1');
+        document.getElementById('disclaimer-overlay').classList.add('hidden');
+    });
+})();
 
 // ── Boot ───────────────────────────────────────────────────
 

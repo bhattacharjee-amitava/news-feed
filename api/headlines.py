@@ -112,6 +112,73 @@ SOURCES = [
 ]
 
 
+# ── Keyword-based category classifier ─────────────────────────────────────────
+
+_KW: list[tuple[str, list[str]]] = [
+    ('SPORTS',        ['cricket', 'football', 'soccer', 'tennis', 'golf', 'basketball', 'hockey',
+                       'rugby', 'olympic', 'olympics', 'ipl', 'fifa', 'wimbledon', 'formula 1', 'f1',
+                       'match', 'tournament', 'championship', 'league', 'player', 'batsman', 'bowler',
+                       'wicket', 'goal', 'semifinal', 'final', 'medal', 'athlete', 'stadium', 'coach',
+                       'squad', 'innings', 'odi', 't20', 'test match', 'world cup', 'grand prix',
+                       'transfer', 'jersey', 'referee']),
+    ('TECH',          ['ai', 'artificial intelligence', 'chatgpt', 'openai', 'gemini', 'llm',
+                       'machine learning', 'robot', 'robotics', 'semiconductor', 'chip', 'gpu',
+                       'apple', 'google', 'microsoft', 'meta', 'amazon', 'nvidia', 'samsung',
+                       'iphone', 'android', 'software', 'app', 'startup', 'cybersecurity', 'hack',
+                       'data breach', 'algorithm', 'cloud', 'quantum', 'biotech', 'drone',
+                       'smartphone', 'gadget', 'tech', 'silicon valley']),
+    ('FINANCE',       ['stock', 'market', 'share', 'gdp', 'inflation', 'recession', 'economy',
+                       'rupee', 'dollar', 'euro', 'yen', 'currency', 'rbi', 'fed', 'interest rate',
+                       'budget', 'tax', 'revenue', 'profit', 'loss', 'quarter', 'earnings',
+                       'ipo', 'nifty', 'sensex', 'nasdaq', 'dow', 's&p', 'bond', 'crypto',
+                       'bitcoin', 'trade deficit', 'export', 'import', 'tariff', 'bank',
+                       'investment', 'fund', 'hedge', 'merger', 'acquisition']),
+    ('HEALTH',        ['virus', 'vaccine', 'covid', 'cancer', 'disease', 'epidemic', 'pandemic',
+                       'hospital', 'patient', 'surgery', 'drug', 'medicine', 'therapy', 'treatment',
+                       'clinical trial', 'mental health', 'obesity', 'diabetes', 'heart', 'stroke',
+                       'who', 'cdc', 'fda', 'health', 'medical', 'doctor', 'nurse', 'nutrition',
+                       'diet', 'fitness', 'wellness', 'pharmacy', 'antibiotics']),
+    ('SCIENCE',       ['nasa', 'space', 'planet', 'asteroid', 'comet', 'galaxy', 'telescope',
+                       'black hole', 'climate', 'global warming', 'fossil', 'dinosaur', 'dna',
+                       'gene', 'genome', 'physics', 'chemistry', 'biology', 'research', 'study',
+                       'scientist', 'discovery', 'experiment', 'lab', 'carbon', 'emission',
+                       'renewable', 'solar', 'nuclear', 'particle', 'evolution']),
+    ('NATURE',        ['ocean', 'sea', 'marine', 'forest', 'wildlife', 'species', 'coral reef',
+                       'extinction', 'biodiversity', 'tiger', 'elephant', 'whale', 'shark',
+                       'bird', 'flood', 'earthquake', 'cyclone', 'hurricane', 'wildfire',
+                       'drought', 'deforestation', 'conservation', 'national park', 'ecosystem']),
+    ('ENTERTAINMENT', ['film', 'movie', 'actor', 'actress', 'director', 'box office', 'netflix',
+                       'disney', 'amazon prime', 'hbo', 'streaming', 'series', 'season', 'episode',
+                       'music', 'album', 'song', 'concert', 'tour', 'grammy', 'oscar', 'bafta',
+                       'emmy', 'celebrity', 'bollywood', 'hollywood', 'award', 'premiere']),
+    ('FASHION',       ['fashion', 'runway', 'couture', 'designer', 'vogue', 'style', 'clothing',
+                       'outfit', 'collection', 'fashion week', 'model', 'luxury brand', 'gucci',
+                       'prada', 'louis vuitton', 'zara', 'h&m', 'sustainable fashion', 'trend']),
+    ('INDIA',         ['india', 'delhi', 'mumbai', 'bengal', 'kolkata', 'gujarat', 'rajasthan',
+                       'kashmir', 'punjab', 'bihar', 'odisha', 'kerala', 'tamil', 'andhra',
+                       'telangana', 'assam', 'modi', 'bjp', 'congress', 'aap', 'tmc',
+                       'supreme court india', 'lok sabha', 'rajya sabha', 'rupee', 'bcci']),
+    ('POLITICS',      ['election', 'president', 'prime minister', 'senate', 'parliament',
+                       'congress', 'democrat', 'republican', 'trump', 'biden', 'vote', 'ballot',
+                       'campaign', 'minister', 'cabinet', 'diplomat', 'sanctions', 'nato',
+                       'un', 'united nations', 'g7', 'g20', 'treaty', 'ceasefire', 'war',
+                       'protest', 'coup', 'referendum', 'legislation', 'bill', 'policy']),
+    ('EXPLORE',       ['history', 'ancient', 'mystery', 'discovery', 'archaeology', 'museum',
+                       'culture', 'tradition', 'mythology', 'philosophy', 'psychology',
+                       'language', 'travel', 'adventure', 'exploration', 'trivia', 'weird',
+                       'unusual', 'fascinating', 'secret', 'hidden', 'lost', 'forgotten']),
+]
+
+def classify_category(title: str, source_category: str) -> str:
+    """Return best-matching category for title, falling back to source_category."""
+    t = title.lower()
+    for cat, keywords in _KW:
+        for kw in keywords:
+            if kw in t:
+                return cat
+    return source_category
+
+
 # ── Helpers ────────────────────────────────────────────────────────────────────
 
 def make_id(url: str) -> str:
@@ -158,9 +225,10 @@ def fetch_rss(source: dict) -> list:
             desc = (entry.get('summary') or entry.get('description') or '').strip()
             if len(desc) > 300:
                 desc = desc[:300].rsplit(' ', 1)[0] + '…'
+            src_cat = source.get('category', 'GEO-POLITICAL')
             out.append({
                 'id': make_id(url), 'title': title, 'url': url,
-                'source': source['name'], 'category': source.get('category', 'WORLD'),
+                'source': source['name'], 'category': classify_category(title, src_cat),
                 'authority': source.get('authority', 5),
                 'published': pub.isoformat(), 'published_ts': pub.timestamp(),
                 'cross_source_count': 1,
@@ -192,9 +260,10 @@ def fetch_reddit(source: dict) -> list:
             pub_ts    = float(p.get('created_utc', now))
             if (now - pub_ts) > MAX_AGE_SECS:
                 continue
+            src_cat = source.get('category', 'GEO-POLITICAL')
             out.append({
                 'id': make_id(url), 'title': title, 'url': url,
-                'source': source['name'], 'category': source.get('category', 'GEO-POLITICAL'),
+                'source': source['name'], 'category': classify_category(title, src_cat),
                 'authority': authority,
                 'published': datetime.fromtimestamp(pub_ts).isoformat(),
                 'published_ts': pub_ts,

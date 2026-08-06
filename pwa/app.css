@@ -243,6 +243,8 @@ html, body {
 #install-btn:active { opacity: 0.8; }
 
 /* ── Action bar ───────────────────────────────────────────── */
+#btn-search { display: none; }
+
 #action-bar {
   position: fixed;
   bottom: 0; left: 0; right: 0;

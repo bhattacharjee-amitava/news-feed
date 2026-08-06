@@ -11,9 +11,9 @@ from urllib.parse import urlparse, parse_qs, quote
 import feedparser
 import requests
 
-TIMEOUT      = 8
-MAX_PER_SRC  = 30
-MAX_AGE_SECS = 14 * 86400
+TIMEOUT      = 5
+MAX_PER_SRC  = 20
+MAX_AGE_SECS = 7 * 86400
 
 RSS_HEADERS    = {'User-Agent': 'Mozilla/5.0 (compatible; WorldSignalFeed/1.0)'}
 REDDIT_HEADERS = {'User-Agent': 'script:WorldSignalFeed:v1.0'}
@@ -33,6 +33,12 @@ MIME = {
 }
 
 SOURCES = [
+    # ALWAYS FRESH — Google News aggregates minutes-old headlines
+    {"name": "Google News",      "url": "https://news.google.com/rss?hl=en-IN&gl=IN&ceid=IN:en",                 "category": "GEO-POLITICAL", "authority": 10},
+    {"name": "Google News World","url": "https://news.google.com/rss/headlines/section/topic/WORLD?hl=en&gl=IN", "category": "GEO-POLITICAL", "authority": 10},
+    {"name": "Google News Tech", "url": "https://news.google.com/rss/headlines/section/topic/TECHNOLOGY?hl=en",  "category": "TECH",          "authority": 10},
+    {"name": "Google News Biz",  "url": "https://news.google.com/rss/headlines/section/topic/BUSINESS?hl=en",   "category": "FINANCE",       "authority": 10},
+    {"name": "Google News Sports","url": "https://news.google.com/rss/headlines/section/topic/SPORTS?hl=en",    "category": "SPORTS",        "authority": 10},
     # GEO-POLITICAL
     {"name": "Reuters World",    "url": "https://feeds.reuters.com/reuters/worldNews",                            "category": "GEO-POLITICAL", "authority": 10},
     {"name": "BBC World",        "url": "https://feeds.bbci.co.uk/news/world/rss.xml",                           "category": "GEO-POLITICAL", "authority": 9},
@@ -219,7 +225,7 @@ def fetch_all(sources=None) -> list:
     with ThreadPoolExecutor(max_workers=12) as ex:
         futs = {ex.submit(fetch_reddit if s.get('type') == 'reddit' else fetch_rss, s): s
                 for s in sources}
-        for fut in as_completed(futs, timeout=25):
+        for fut in as_completed(futs, timeout=8):
             try:
                 for h in fut.result():
                     if h['id'] not in seen:

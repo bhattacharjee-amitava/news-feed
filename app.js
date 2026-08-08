@@ -475,19 +475,18 @@ async function openModal(h) {
     document.getElementById('modal-overlay').classList.remove('hidden');
     document.body.style.overflow = 'hidden';
 
-    // Try to fetch summary; fall back silently to clean description
+    // Silently fetch summary in background; update desc only if summary arrives
     if (h.url) {
-        desc.textContent = 'Summarising…';
-        desc.style.display = '';
         try {
             const res  = await fetch(`/api/summarize?url=${encodeURIComponent(h.url)}`);
             const data = await res.json();
             const summary = data.summary && data.summary.trim();
-            desc.textContent   = summary || fallback;
-            desc.style.display = (summary || fallback) ? '' : 'none';
+            if (summary) {
+                desc.textContent   = summary;
+                desc.style.display = '';
+            }
         } catch {
-            desc.textContent   = fallback;
-            desc.style.display = fallback ? '' : 'none';
+            // keep existing description — no change
         }
     }
 }

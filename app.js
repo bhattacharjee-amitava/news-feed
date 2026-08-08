@@ -12,6 +12,67 @@ let fetchCount   = 0;
 let activeFilter = '';
 let currentLang  = 'en';
 
+// ── Favourites ─────────────────────────────────────────────
+
+const FAV_KEY = 'wsf_favorites';
+
+function getFavs() {
+    try { return JSON.parse(localStorage.getItem(FAV_KEY) || '[]'); }
+    catch { return []; }
+}
+
+function saveFavs(favs) {
+    localStorage.setItem(FAV_KEY, JSON.stringify(favs));
+}
+
+function isFav(id) {
+    return getFavs().some(f => f.id === id);
+}
+
+function toggleFav(h, starEl) {
+    let favs = getFavs();
+    const idx = favs.findIndex(f => f.id === h.id);
+    if (idx === -1) {
+        favs.push(h);
+        saveFavs(favs);
+        document.querySelectorAll(`.card[data-id="${h.id}"] .star-btn`).forEach(s => {
+            s.textContent = '★'; s.classList.add('starred');
+        });
+        addFavCard(h);
+    } else {
+        favs.splice(idx, 1);
+        saveFavs(favs);
+        document.querySelectorAll(`.card[data-id="${h.id}"] .star-btn`).forEach(s => {
+            s.textContent = '☆'; s.classList.remove('starred');
+        });
+        const sec = document.getElementById('fav-section');
+        if (sec) {
+            const fc = sec.querySelector(`.card[data-id="${h.id}"]`);
+            if (fc) fc.remove();
+            if (!sec.querySelector('.card')) sec.remove();
+        }
+    }
+}
+
+function addFavCard(h) {
+    let sec = document.getElementById('fav-section');
+    if (!sec) {
+        sec = document.createElement('div');
+        sec.id = 'fav-section';
+        const hdr = document.createElement('div');
+        hdr.className = 'fav-header';
+        hdr.textContent = '★  PINNED';
+        sec.appendChild(hdr);
+        const feed = document.getElementById('feed');
+        feed.insertBefore(sec, feed.firstChild);
+    }
+    sec.appendChild(makeCard(h));
+}
+
+function renderFavSection() {
+    getFavs().forEach(h => addFavCard(h));
+}
+
 // ── Helpers ────────────────────────────────────────────────
 
 function esc(s) {
@@ -38,9 +99,10 @@ function setStatus(msg) {
 // ── Card ───────────────────────────────────────────────────
 
 function makeCard(h) {
-    const score = Math.round((h.score || 0) * 100);
-    const cross = h.cross_source_count > 1 ? ` · +${h.cross_source_count - 1}` : '';
-    const div   = document.createElement('div');
+    const score    = Math.round((h.score || 0) * 100);
+    const cross    = h.cross_source_count > 1 ? ` · +${h.cross_source_count - 1}` : '';
+    const starred  = isFav(h.id);
+    const div      = document.createElement('div');
     div.className      = 'card';
     div.dataset.id     = h.id;
     div.dataset.source   = (h.source   || '').toLowerCase();
@@ -51,9 +113,14 @@ function makeCard(h) {
         <span class="source-tag">${esc(h.source)}</span>
         <span class="cross">${esc(cross)}</span>
         <span class="age">${timeAgo(h.published)}</span>
+        <button class="star-btn${starred ? ' starred' : ''}" aria-label="Favourite">${starred ? '★' : '☆'}</button>
       </div>
       <div class="headline">${esc(h.title)}</div>
       <div class="score-bar"><div class="score-fill" style="width:${score}%"></div></div>`;
+    div.querySelector('.star-btn').addEventListener('click', e => {
+        e.stopPropagation();
+        toggleFav(h, e.currentTarget);
+    });
     div.addEventListener('click', () => openModal(h));
     return div;
 }
@@ -195,6 +262,7 @@ function closeSearch(keepFilter = false) {
     searchActive = false;
     document.getElementById('search-bar').classList.add('hidden');
     document.getElementById('btn-search').classList.remove('active');
+    document.getElementById('search-trigger').classList.remove('active');
     if (!keepFilter) {
         applyFilter('');
         document.getElementById('search-not-found').classList.add('hidden');
@@ -204,6 +272,15 @@ function closeSearch(keepFilter = false) {
 document.getElementById('btn-search').addEventListener('click', () =>
     searchActive ? closeSearch() : openSearch()
 );
+document.getElementById('search-trigger').addEventListener('click', () => {
+    if (searchActive) {
+        closeSearch();
+        document.getElementById('search-trigger').classList.remove('active');
+    } else {
+        openSearch();
+        document.getElementById('search-trigger').classList.add('active');
+    }
+});
 document.getElementById('search-input').addEventListener('input',  e => applyFilter(e.target.value));
 document.getElementById('search-input').addEventListener('keydown', e => {
     if (e.key === 'Enter') {
@@ -436,6 +513,7 @@ document.addEventListener('scroll', () => requestAnimationFrame(updateTopCard), 
 
 // ── Boot ───────────────────────────────────────────────────
 
+renderFavSection();
 fetchHeadlines();
 setInterval(fetchHeadlines, POLL_MS);
 setTimeout(updateTopCard, 1000);

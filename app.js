@@ -455,31 +455,40 @@ document.addEventListener('click', () =>
 
 // ── Modal ──────────────────────────────────────────────────
 
+function _cleanDesc(raw) {
+    if (!raw) return '';
+    const d = document.createElement('div');
+    d.innerHTML = raw;
+    return (d.textContent || d.innerText || '').replace(/\s+/g, ' ').trim();
+}
+
 async function openModal(h) {
     track('article_click', { title: h.title, source: h.source, lang: currentLang });
     document.getElementById('modal-source').textContent = h.source;
     document.getElementById('modal-age').textContent    = timeAgo(h.published);
     document.getElementById('modal-title').textContent  = h.title;
     const desc = document.getElementById('modal-desc');
-    desc.textContent   = h.description || '';
-    desc.style.display = '';
+    const fallback = _cleanDesc(h.description);
+    desc.textContent   = fallback;
+    desc.style.display = fallback ? '' : 'none';
     document.getElementById('modal-link').href = h.url;
     document.getElementById('modal-overlay').classList.remove('hidden');
     document.body.style.overflow = 'hidden';
 
-    // Try to fetch AI summary; fall back silently to existing description
+    // Try to fetch summary; fall back silently to clean description
     if (h.url) {
         desc.textContent = 'Summarising…';
+        desc.style.display = '';
         try {
             const res  = await fetch(`/api/summarize?url=${encodeURIComponent(h.url)}`);
             const data = await res.json();
-            desc.textContent = (data.summary && data.summary.trim())
-                ? data.summary
-                : (h.description || '');
+            const summary = data.summary && data.summary.trim();
+            desc.textContent   = summary || fallback;
+            desc.style.display = (summary || fallback) ? '' : 'none';
         } catch {
-            desc.textContent = h.description || '';
+            desc.textContent   = fallback;
+            desc.style.display = fallback ? '' : 'none';
         }
-        desc.style.display = desc.textContent ? '' : 'none';
     }
 }
 

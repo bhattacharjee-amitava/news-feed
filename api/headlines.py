@@ -10,6 +10,10 @@ from urllib.parse import urlparse, parse_qs, quote
 
 import feedparser
 import requests
+import re as _re
+
+def _strip_html(text: str) -> str:
+    return _re.sub(r'<[^>]+>', '', text).replace('&nbsp;', ' ').replace('&amp;', '&').strip()
 
 TIMEOUT      = 5
 MAX_PER_SRC  = 20
@@ -375,7 +379,7 @@ def fetch_rss(source: dict) -> list:
             pub = parse_pub(entry)
             if (now - pub.timestamp()) > MAX_AGE_SECS:
                 continue
-            desc = (entry.get('summary') or entry.get('description') or '').strip()
+            desc = _strip_html(entry.get('summary') or entry.get('description') or '')
             if len(desc) > 300:
                 desc = desc[:300].rsplit(' ', 1)[0] + '…'
             src_cat = source.get('category', 'GEO-POLITICAL')

@@ -256,17 +256,19 @@ html, body {
 .star-btn {
   background: none;
   border: none;
-  font-size: 18px;
+  font-size: 20px;
   line-height: 1;
-  color: var(--secondary);
+  color: #f5c518;
   cursor: pointer;
   padding: 0 0 0 8px;
   flex-shrink: 0;
   -webkit-tap-highlight-color: transparent;
-  transition: color 0.15s, transform 0.15s;
+  transition: transform 0.15s;
+  opacity: 0.35;
+  font-weight: 900;
 }
 .star-btn:active { transform: scale(1.3); }
-.star-btn.starred { color: #f5c518; }
+.star-btn.starred { opacity: 1; }
 
 #fav-section { border-bottom: 1px solid var(--accent); }
 .fav-header {

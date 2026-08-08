@@ -462,33 +462,18 @@ function _cleanDesc(raw) {
     return (d.textContent || d.innerText || '').replace(/\s+/g, ' ').trim();
 }
 
-async function openModal(h) {
+function openModal(h) {
     track('article_click', { title: h.title, source: h.source, lang: currentLang });
     document.getElementById('modal-source').textContent = h.source;
     document.getElementById('modal-age').textContent    = timeAgo(h.published);
     document.getElementById('modal-title').textContent  = h.title;
     const desc = document.getElementById('modal-desc');
-    const fallback = _cleanDesc(h.description);
-    desc.textContent   = fallback;
-    desc.style.display = fallback ? '' : 'none';
+    const text = _cleanDesc(h.description);
+    desc.textContent   = text;
+    desc.style.display = text ? '' : 'none';
     document.getElementById('modal-link').href = h.url;
     document.getElementById('modal-overlay').classList.remove('hidden');
     document.body.style.overflow = 'hidden';
-
-    // Silently fetch summary in background; update desc only if summary arrives
-    if (h.url) {
-        try {
-            const res  = await fetch(`/api/summarize?url=${encodeURIComponent(h.url)}`);
-            const data = await res.json();
-            const summary = data.summary && data.summary.trim();
-            if (summary) {
-                desc.textContent   = summary;
-                desc.style.display = '';
-            }
-        } catch {
-            // keep existing description — no change
-        }
-    }
 }
 
 function closeModal() {

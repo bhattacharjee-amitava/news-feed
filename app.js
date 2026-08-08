@@ -217,33 +217,82 @@ async function fetchHeadlines(q) {
     }
 }
 
-// ── Filter ─────────────────────────────────────────────────
+// ── Smart search ────────────────────────────────────────────
+
+const _NOISE = new Set([
+    'headlines','news','articles','stories','latest','recent','show','from',
+    'about','give','find','get','the','and','for','with','that','this','just',
+    'only','all','any','some','more','most','have','been','will','specific',
+    'related','regarding','please','me','i','want','need','looking','fetch',
+    'search','tell','display','list','give','ones','those','these'
+]);
+
+const _CAT_ALIAS = {
+    'india': 'india',         'indian': 'india',
+    'sports': 'sports',       'sport': 'sports',
+    'cricket': 'sports',      'football': 'sports',     'soccer': 'sports',
+    'tech': 'tech',           'technology': 'tech',     'ai': 'tech',
+    'finance': 'finance',     'business': 'finance',    'market': 'finance',
+    'stock': 'finance',       'economy': 'finance',
+    'health': 'health',       'medical': 'health',      'medicine': 'health',
+    'science': 'science',     'space': 'science',
+    'entertainment': 'entertainment', 'movie': 'entertainment',
+    'film': 'entertainment',  'bollywood': 'entertainment',
+    'politics': 'politics',   'political': 'politics',  'election': 'politics',
+    'nature': 'nature',       'wildlife': 'nature',     'environment': 'nature',
+    'world': 'geo-political', 'global': 'geo-political','international': 'geo-political',
+};
+
+function _extractIntent(raw) {
+    const words = raw.trim().toLowerCase().split(/\W+/).filter(w => w.length >= 2);
+    let category = null;
+    const keywords = [];
+    for (const w of words) {
+        if (_CAT_ALIAS[w]) { category = _CAT_ALIAS[w]; }
+        else if (!_NOISE.has(w) && w.length >= 3) { keywords.push(w); }
+    }
+    return { category, keywords };
+}
 
 function applyFilter(query) {
     const q = query.trim().toLowerCase();
     activeFilter = q;
-    // Remove any previously live-fetched cards before each new search
     document.querySelectorAll('.card[data-live]').forEach(c => c.remove());
-    const cards = [...document.querySelectorAll('.card')];
     document.getElementById('search-not-found').classList.add('hidden');
-    if (!q) { cards.forEach(c => c.style.display = ''); return; }
 
-    // Step 1: exact phrase match in title
-    let matched = cards.filter(c => c.dataset.title.includes(q));
-
-    // Step 2: if nothing, match meaningful individual words in title
-    if (!matched.length) {
-        const NOISE = new Set(['headlines','news','articles','stories','latest','recent',
-            'show','from','about','give','find','get','the','and','for','with','that',
-            'this','just','only','all','any','some','more','most','have','been','will']);
-        const words = q.split(/\W+/).filter(w => w.length >= 4 && !NOISE.has(w));
-        if (words.length) {
-            matched = cards.filter(c => words.some(w => c.dataset.title.includes(w)));
+    // Restore all non-fav cards first
+    document.querySelectorAll('.card').forEach(c => {
+        if (!c.closest('#fav-section')) {
+            c.style.display = isFav(c.dataset.id) ? 'none' : '';
         }
-    }
+    });
 
-    // Step 3: nothing locally — silently fetch live in background
-    if (!matched.length) {
+    if (!q) return;
+
+    const { category, keywords } = _extractIntent(q);
+    const cards = [...document.querySelectorAll('.card:not([style*="display: none"])')];
+
+    // Score each card
+    const scored = cards.map(c => {
+        let score = 0;
+        if (category && c.dataset.category === category) score += 10;
+        for (const kw of keywords) {
+            if (c.dataset.title.includes(kw))  score += 3;
+            if (c.dataset.source.includes(kw)) score += 1;
+            if (c.dataset.category.includes(kw)) score += 2;
+        }
+        // Exact phrase bonus
+        if (keywords.length && c.dataset.title.includes(keywords.join(' '))) score += 5;
+        return { c, score };
+    });
+
+    const threshold = category ? 10 : (keywords.length ? 1 : 0);
+    const matched = scored.filter(x => x.score >= threshold)
+                          .sort((a, b) => b.score - a.score)
+                          .map(x => x.c);
+
+    if (!matched.length && !category && keywords.length) {
+        // Nothing found locally — live fetch fallback
         cards.forEach(c => c.style.display = 'none');
         document.getElementById('search-not-found').textContent = 'Searching…';
         document.getElementById('search-not-found').classList.remove('hidden');
@@ -251,8 +300,17 @@ function applyFilter(query) {
         return;
     }
 
+    // Show only matched, in relevance order
+    const feed = document.getElementById('feed');
+    const sentinel = document.getElementById('sentinel');
     const matchedSet = new Set(matched);
-    cards.forEach(c => c.style.display = matchedSet.has(c) ? '' : 'none');
+    cards.forEach(c => { c.style.display = matchedSet.has(c) ? '' : 'none'; });
+    matched.forEach(c => feed.insertBefore(c, sentinel));
+
+    if (!matched.length) {
+        document.getElementById('search-not-found').textContent = 'Not found!';
+        document.getElementById('search-not-found').classList.remove('hidden');
+    }
 }
 
 // ── Search ─────────────────────────────────────────────────
@@ -397,17 +455,32 @@ document.addEventListener('click', () =>
 
 // ── Modal ──────────────────────────────────────────────────
 
-function openModal(h) {
+async function openModal(h) {
     track('article_click', { title: h.title, source: h.source, lang: currentLang });
     document.getElementById('modal-source').textContent = h.source;
     document.getElementById('modal-age').textContent    = timeAgo(h.published);
     document.getElementById('modal-title').textContent  = h.title;
     const desc = document.getElementById('modal-desc');
-    desc.textContent  = h.description || '';
-    desc.style.display = h.description ? '' : 'none';
+    desc.textContent   = h.description || '';
+    desc.style.display = '';
     document.getElementById('modal-link').href = h.url;
     document.getElementById('modal-overlay').classList.remove('hidden');
     document.body.style.overflow = 'hidden';
+
+    // Try to fetch AI summary; fall back silently to existing description
+    if (h.url) {
+        desc.textContent = 'Summarising…';
+        try {
+            const res  = await fetch(`/api/summarize?url=${encodeURIComponent(h.url)}`);
+            const data = await res.json();
+            desc.textContent = (data.summary && data.summary.trim())
+                ? data.summary
+                : (h.description || '');
+        } catch {
+            desc.textContent = h.description || '';
+        }
+        desc.style.display = desc.textContent ? '' : 'none';
+    }
 }
 
 function closeModal() {

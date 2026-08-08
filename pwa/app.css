@@ -256,14 +256,16 @@ html, body {
 .star-btn {
   background: none;
   border: none;
-  font-size: 15px;
+  font-size: 18px;
   line-height: 1;
-  color: var(--muted);
+  color: var(--secondary);
   cursor: pointer;
-  padding: 0 0 0 6px;
+  padding: 0 0 0 8px;
   flex-shrink: 0;
   -webkit-tap-highlight-color: transparent;
+  transition: color 0.15s, transform 0.15s;
 }
+.star-btn:active { transform: scale(1.3); }
 .star-btn.starred { color: #f5c518; }
 
 #fav-section { border-bottom: 1px solid var(--accent); }

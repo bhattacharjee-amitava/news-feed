@@ -468,9 +468,8 @@ function openModal(h) {
     document.getElementById('modal-age').textContent    = timeAgo(h.published);
     document.getElementById('modal-title').textContent  = h.title;
     const desc = document.getElementById('modal-desc');
-    const text = _cleanDesc(h.description);
-    desc.textContent   = text;
-    desc.style.display = text ? '' : 'none';
+    desc.textContent   = h.description || '';
+    desc.style.display = h.description ? '' : 'none';
     document.getElementById('modal-link').href = h.url;
     document.getElementById('modal-overlay').classList.remove('hidden');
     document.body.style.overflow = 'hidden';

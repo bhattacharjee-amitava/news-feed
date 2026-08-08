@@ -38,12 +38,20 @@ function toggleFav(h, starEl) {
         document.querySelectorAll(`.card[data-id="${h.id}"] .star-btn`).forEach(s => {
             s.textContent = '★'; s.classList.add('starred');
         });
+        // hide duplicate in normal feed
+        document.querySelectorAll(`.card[data-id="${h.id}"]`).forEach(c => {
+            if (!c.closest('#fav-section')) c.style.display = 'none';
+        });
         addFavCard(h);
     } else {
         favs.splice(idx, 1);
         saveFavs(favs);
         document.querySelectorAll(`.card[data-id="${h.id}"] .star-btn`).forEach(s => {
             s.textContent = '☆'; s.classList.remove('starred');
+        });
+        // restore card in normal feed
+        document.querySelectorAll(`.card[data-id="${h.id}"]`).forEach(c => {
+            if (!c.closest('#fav-section')) c.style.display = '';
         });
         const sec = document.getElementById('fav-section');
         if (sec) {
@@ -137,6 +145,7 @@ function renderBatch(batch, prepend = false, live = false) {
     for (const h of batch) {
         const card = makeCard(h);
         if (live) card.dataset.live = '1';
+        if (isFav(h.id)) card.style.display = 'none';
         frag.appendChild(card);
         displayedIds.add(h.id);
     }

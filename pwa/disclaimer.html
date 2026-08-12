@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#131311">
+  <title>Transparency & Disclaimer — World Signal Feed</title>
+  <style>
+    :root {
+      --page:   #f5f3ee;
+      --ink:    #1c1c28;
+      --rule:   #ccc8bc;
+      --accent: #1a6b4a;
+      --meta:   #6b6660;
+      --warn-bg: color-mix(in srgb, #8b3a0f 8%, #f5f3ee);
+      --warn-fg: #7a2e0a;
+      --warn-bd: #8b3a0f;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --page:   #131311;
+        --ink:    #e8e4dc;
+        --rule:   #2c2925;
+        --accent: #3db87a;
+        --meta:   #857f74;
+        --warn-bg: color-mix(in srgb, #c4743a 10%, #131311);
+        --warn-fg: #d08050;
+        --warn-bd: #a05a28;
+      }
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html {
+      background: var(--page);
+      color: var(--ink);
+      font-family: Georgia, 'Times New Roman', serif;
+      font-size: 17px;
+      line-height: 1.75;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body { max-width: 740px; margin: 0 auto; padding: 0 28px 80px; }
+
+    /* Back link */
+    .back {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: ui-monospace, monospace;
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--accent);
+      text-decoration: none;
+      margin-top: 28px;
+      padding: 6px 0;
+    }
+    .back:hover { text-decoration: underline; }
+
+    header {
+      border-bottom: 1.5px solid var(--ink);
+      padding: 24px 0 22px;
+      margin-bottom: 52px;
+    }
+    .eyebrow {
+      font-family: ui-monospace, monospace;
+      font-size: 11px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 16px;
+    }
+    h1 {
+      font-size: clamp(28px, 4vw, 40px);
+      font-weight: normal;
+      line-height: 1.2;
+      text-wrap: balance;
+    }
+
+    .section {
+      display: grid;
+      grid-template-columns: 48px 1fr;
+      gap: 0 32px;
+      padding: 38px 0;
+      border-bottom: 0.5px solid var(--rule);
+    }
+    .section:last-of-type { border-bottom: none; }
+
+    .section-mark { padding-top: 4px; position: relative; }
+    .section-letter {
+      font-family: ui-monospace, monospace;
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--accent);
+      display: block;
+      position: sticky;
+      top: 24px;
+    }
+    .ghost {
+      position: absolute;
+      top: -10px; left: -8px;
+      font-size: 76px;
+      font-family: Georgia, serif;
+      font-weight: bold;
+      color: var(--ink);
+      opacity: 0.04;
+      line-height: 1;
+      pointer-events: none;
+      user-select: none;
+    }
+
+    .body h2 {
+      font-size: 20px;
+      font-weight: normal;
+      margin-bottom: 16px;
+      line-height: 1.3;
+      text-wrap: balance;
+    }
+    .body p { max-width: 60ch; margin-bottom: 14px; color: var(--ink); }
+    .body p:last-child { margin-bottom: 0; }
+
+    .callout {
+      border-left: 3px solid var(--warn-bd);
+      background: var(--warn-bg);
+      color: var(--warn-fg);
+      padding: 12px 16px;
+      margin: 16px 0;
+      font-size: 15px;
+      max-width: 60ch;
+    }
+
+    .source-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+      border: 0.5px solid var(--rule);
+      margin-top: 18px;
+      font-size: 14px;
+      overflow-x: auto;
+    }
+    .sg { border-right: 0.5px solid var(--rule); border-bottom: 0.5px solid var(--rule); padding: 12px 14px; }
+    .sg-label {
+      font-family: ui-monospace, monospace;
+      font-size: 9px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--meta);
+      margin-bottom: 6px;
+    }
+    .sg ul { list-style: none; }
+    .sg li { line-height: 1.65; color: var(--ink); }
+
+    @media (max-width: 540px) {
+      .section { grid-template-columns: 1fr; gap: 6px 0; }
+      .ghost { display: none; }
+      .source-grid { grid-template-columns: 1fr 1fr; }
+    }
+    @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+  </style>
+</head>
+<body>
+
+<a class="back" href="/">&#8592; Back to feed</a>
+
+<header>
+  <div class="eyebrow">World Signal Feed</div>
+  <h1>Transparency &amp; Disclaimer</h1>
+</header>
+
+<div class="section">
+  <div class="section-mark"><span class="section-letter">A</span><span class="ghost">A</span></div>
+  <div class="body">
+    <h2>What this site is</h2>
+    <p>World Signal Feed is an automated news aggregator. It collects headlines, brief excerpts, and links from third-party publishers and displays them in a single feed. We are not the author, editor, publisher, or verifier of any article shown here. All content originates with the outlets listed in section D and remains their intellectual property.</p>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-mark"><span class="section-letter">B</span><span class="ghost">B</span></div>
+  <div class="body">
+    <h2>Accuracy</h2>
+    <p>We make no warranty about the accuracy, completeness, or timeliness of any content shown here. Several things can cause what you see to differ from what the source intended:</p>
+    <p><strong>Refresh delay.</strong> The server updates each source at most once per minute. A correction or retraction published moments ago may not yet be reflected.</p>
+    <p><strong>Snippet truncation.</strong> Descriptions are cut at 300 characters. A qualification, correction, or key figure that falls after the cut is not shown.</p>
+    <p><strong>Category errors.</strong> Headlines are categorised automatically by a keyword algorithm. It makes mistakes; a story may appear under the wrong heading.</p>
+    <p><strong>Feed errors.</strong> Malformed XML or encoding issues in a source feed can produce garbled text or wrong publication dates.</p>
+    <div class="callout">
+      Content here is for general information only — not professional, financial, medical, or legal advice. Always read the original article at the publisher's site before relying on anything shown here.
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-mark"><span class="section-letter">C</span><span class="ghost">C</span></div>
+  <div class="body">
+    <h2>No liability</h2>
+    <p>We accept no responsibility for any loss or damage arising from reliance on content displayed here, the accuracy or legality of third-party articles we link to, or interruption of this service. We did not write the articles; we cannot correct them.</p>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-mark"><span class="section-letter">D</span><span class="ghost">D</span></div>
+  <div class="body">
+    <h2>Sources</h2>
+    <p>We aggregate from the following publishers via their publicly available RSS/Atom feeds or public JSON APIs. Headlines and excerpts are reproduced solely to link readers to the original article. All copyright and moral rights remain with the respective publishers. Inclusion is not an endorsement of, or affiliation with, any outlet.</p>
+    <div class="source-grid">
+      <div class="sg"><div class="sg-label">Global wire / aggregator</div><ul><li>Google News</li><li>Reuters</li><li>BBC News</li><li>Al Jazeera</li><li>Foreign Policy</li><li>The Diplomat</li></ul></div>
+      <div class="sg"><div class="sg-label">Sports</div><ul><li>ESPN</li><li>ESPNcricinfo</li><li>NDTV Sports</li><li>Goal.com</li></ul></div>
+      <div class="sg"><div class="sg-label">Technology</div><ul><li>TechCrunch</li><li>Ars Technica</li><li>MIT Technology Review</li><li>VentureBeat</li></ul></div>
+      <div class="sg"><div class="sg-label">Finance</div><ul><li>Moneycontrol</li><li>MarketWatch</li><li>ET Markets</li></ul></div>
+      <div class="sg"><div class="sg-label">Science</div><ul><li>NASA</li><li>Science Daily</li><li>New Scientist</li><li>Phys.org</li></ul></div>
+      <div class="sg"><div class="sg-label">Health</div><ul><li>World Health Organization</li><li>Medical News Today</li><li>Healthline</li></ul></div>
+      <div class="sg"><div class="sg-label">Nature &amp; environment</div><ul><li>NOAA</li><li>Maritime Executive</li></ul></div>
+      <div class="sg"><div class="sg-label">Politics</div><ul><li>Politico</li><li>The Hill</li></ul></div>
+      <div class="sg"><div class="sg-label">Curiosity &amp; culture</div><ul><li>Atlas Obscura</li><li>Smithsonian Magazine</li><li>Big Think</li></ul></div>
+      <div class="sg"><div class="sg-label">Fashion</div><ul><li>Vogue</li><li>Harper's Bazaar</li><li>Elle</li></ul></div>
+      <div class="sg"><div class="sg-label">India — Times of India</div><ul><li>India · Sports · Tech</li><li>Business · Entertainment · Health</li></ul></div>
+      <div class="sg"><div class="sg-label">India — The Hindu</div><ul><li>India · Sports · SciTech</li><li>Business · Health · Entertainment</li></ul></div>
+      <div class="sg"><div class="sg-label">India — Indian Express</div><ul><li>India · Sports · Tech</li><li>Business · Entertainment · Health</li></ul></div>
+      <div class="sg"><div class="sg-label">India — NDTV</div><ul><li>India · Sports · Tech</li><li>Business · Entertainment</li></ul></div>
+      <div class="sg"><div class="sg-label">India — Hindustan Times</div><ul><li>India · Sports</li><li>Tech · Entertainment</li></ul></div>
+      <div class="sg"><div class="sg-label">Reddit (public API)</div><ul><li>r/worldnews · r/geopolitics</li><li>r/india · r/Cricket · r/soccer</li><li>r/technology · r/MachineLearning</li><li>r/science · r/investing</li><li>r/movies · r/todayilearned</li></ul></div>
+      <div class="sg"><div class="sg-label">Bengali edition</div><ul><li>BBC Bangla · Prothom Alo</li><li>Anandabazar · Sangbad Pratidin</li><li>Ei Samay · ABP Ananda</li><li>News18 Bangla · Zee 24 Ghanta</li><li>Jugantor · Daily Ittefaq</li><li>Dainik Statesman · Kaler Kantho</li></ul></div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-mark"><span class="section-letter">E</span><span class="ghost">E</span></div>
+  <div class="body">
+    <h2>AI disclosure</h2>
+    <p><strong>Used to build the site.</strong> This application was developed with the assistance of Claude (Anthropic), an AI coding assistant. A human operator directed and reviewed all changes.</p>
+    <p><strong>Not used on content.</strong> No AI model processes, summarises, rewrites, or generates any content shown to users at runtime. Headlines and excerpts are reproduced verbatim from source feeds.</p>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-mark"><span class="section-letter">F</span><span class="ghost">F</span></div>
+  <div class="body">
+    <h2>How stories are ranked</h2>
+    <p>No human hand-picks or reorders individual stories. There is no sponsored or promoted content. Stories surface based on a formula: 60% source authority (a fixed score per publication) and 40% recency (linear decay over six days). The final display order is purely chronological.</p>
+    <p>The source list itself is a curatorial choice — it reflects which outlets the operator considers worth following. Sources from many regions, languages, and political traditions are not represented.</p>
+  </div>
+</div>
+
+</body>
+</html>

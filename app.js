@@ -157,7 +157,11 @@ function renderBatch(batch, prepend = false, live = false) {
         feed.insertBefore(frag, sentinel);
     }
 
-    if (activeFilter) applyFilter(activeFilter);
+    if (activeFilter) {
+        applyFilter(activeFilter);
+    } else if (activeCategory !== 'all') {
+        applyCategory(activeCategory);
+    }
     updateTopCard();
     setStatus(`Last fetch: ${new Date().toLocaleTimeString()}`);
 }

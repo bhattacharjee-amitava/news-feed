@@ -42,14 +42,13 @@ html, body {
 .strip-dot { color: var(--border); }
 .strip-info {
   margin-left: 10px;
-  color: var(--muted);
-  font-size: 15px;
+  color: var(--accent);
+  font-size: 20px;
   line-height: 1;
   text-decoration: none;
-  opacity: 0.7;
   flex-shrink: 0;
 }
-.strip-info:hover { opacity: 1; color: var(--accent); }
+.strip-info:hover { opacity: 0.75; }
 
 /* ── Language switcher ────────────────────────────────────── */
 #lang-wrap {

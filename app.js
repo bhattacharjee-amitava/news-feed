@@ -544,6 +544,7 @@ const _sessionStart = Date.now();
 
 function track(name, data) {
     window.va?.('event', { name, data });
+    window.umami?.track(name, data);
 }
 
 // Time spent — fires when user leaves or hides the tab

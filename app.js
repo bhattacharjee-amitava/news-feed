@@ -116,6 +116,9 @@ function makeCard(h) {
     div.dataset.source   = (h.source   || '').toLowerCase();
     div.dataset.title    = (h.title    || '').toLowerCase();
     div.dataset.category = (h.category || '').toLowerCase();
+    const imgHtml = h.image
+        ? `<img class="card-img" src="${esc(h.image)}" alt="" loading="lazy" onerror="this.remove()">`
+        : '';
     div.innerHTML = `
       <div class="card-meta">
         <span class="source-tag">${esc(h.source)}</span>
@@ -123,6 +126,7 @@ function makeCard(h) {
         <span class="age">${timeAgo(h.published)}</span>
         <button class="star-btn${starred ? ' starred' : ''}" aria-label="Favourite">${starred ? '★' : '☆'}</button>
       </div>
+      ${imgHtml}
       <div class="headline">${esc(h.title)}</div>
       <div class="score-bar"><div class="score-fill" style="width:${score}%"></div></div>`;
     div.querySelector('.star-btn').addEventListener('click', e => {
@@ -471,6 +475,9 @@ function openModal(h) {
     document.getElementById('modal-source').textContent = h.source;
     document.getElementById('modal-age').textContent    = timeAgo(h.published);
     document.getElementById('modal-title').textContent  = h.title;
+    const modalImg = document.getElementById('modal-img');
+    if (h.image) { modalImg.src = h.image; modalImg.hidden = false; }
+    else { modalImg.hidden = true; modalImg.src = ''; }
     const desc = document.getElementById('modal-desc');
     desc.textContent   = h.description || '';
     desc.style.display = h.description ? '' : 'none';

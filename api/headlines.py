@@ -15,7 +15,25 @@ import re as _re
 def _strip_html(text: str) -> str:
     return _re.sub(r'<[^>]+>', '', text).replace('&nbsp;', ' ').replace('&amp;', '&').strip()
 
+def _extract_image(entry) -> str:
+    for attr in ('media_content', 'media_thumbnail'):
+        for item in (getattr(entry, attr, None) or []):
+            url = item.get('url', '')
+            if url and url.startswith('http'):
+                return url
+    for enc in (getattr(entry, 'enclosures', None) or []):
+        url = enc.get('url', '')
+        if url and enc.get('type', '').startswith('image/'):
+            return url
+    for link in (getattr(entry, 'links', None) or []):
+        if link.get('type', '').startswith('image/'):
+            url = link.get('href', '')
+            if url:
+                return url
+    return ''
+
 TIMEOUT      = 5
+BN_TIMEOUT   = 8
 MAX_PER_SRC  = 20
 MAX_AGE_SECS = 7 * 86400
 
@@ -362,9 +380,9 @@ def compute_score(authority: int, pub_ts: float, now_ts: float) -> float:
 
 # ── Fetchers ───────────────────────────────────────────────────────────────────
 
-def fetch_rss(source: dict) -> list:
+def fetch_rss(source: dict, req_timeout: int = TIMEOUT) -> list:
     try:
-        r    = requests.get(source['url'], timeout=TIMEOUT, headers=RSS_HEADERS)
+        r    = requests.get(source['url'], timeout=req_timeout, headers=RSS_HEADERS)
         feed = feedparser.parse(r.content)
         now  = time.time()
         out  = []
@@ -390,6 +408,7 @@ def fetch_rss(source: dict) -> list:
                 'published': pub.isoformat(), 'published_ts': pub.timestamp(),
                 'cross_source_count': 1,
                 'description': desc,
+                'image': _extract_image(entry),
                 'score': compute_score(source.get('authority', 5), pub.timestamp(), now),
             })
         return out
@@ -397,9 +416,9 @@ def fetch_rss(source: dict) -> list:
         return []
 
 
-def fetch_reddit(source: dict) -> list:
+def fetch_reddit(source: dict, req_timeout: int = TIMEOUT) -> list:
     try:
-        r     = requests.get(source['url'], timeout=TIMEOUT, headers=REDDIT_HEADERS)
+        r     = requests.get(source['url'], timeout=req_timeout, headers=REDDIT_HEADERS)
         posts = r.json()['data']['children']
         now   = time.time()
         out   = []
@@ -458,19 +477,20 @@ def fetch_all_cached(lang: str = 'en') -> list:
     if c['data'] and (now - c['ts']) < CACHE_TTL:
         return c['data']
     sources = BN_SOURCES if lang == 'bn' else SOURCES
-    data = fetch_all(sources)
+    req_t, global_t = (BN_TIMEOUT, 15) if lang == 'bn' else (TIMEOUT, 8)
+    data = fetch_all(sources, req_timeout=req_t, global_timeout=global_t)
     c['ts'] = now
     c['data'] = data
     return data
 
-def fetch_all(sources=None) -> list:
+def fetch_all(sources=None, req_timeout: int = TIMEOUT, global_timeout: int = 8) -> list:
     if sources is None:
         sources = SOURCES
     seen, out = set(), []
     with ThreadPoolExecutor(max_workers=12) as ex:
-        futs = {ex.submit(fetch_reddit if s.get('type') == 'reddit' else fetch_rss, s): s
+        futs = {ex.submit(fetch_reddit if s.get('type') == 'reddit' else fetch_rss, s, req_timeout): s
                 for s in sources}
-        for fut in as_completed(futs, timeout=8):
+        for fut in as_completed(futs, timeout=global_timeout):
             try:
                 for h in fut.result():
                     if h['id'] not in seen:

@@ -14,8 +14,23 @@ let currentLang  = 'en';
 
 // ── Favourites ─────────────────────────────────────────────
 
-const FAV_KEY  = 'wsf_favorites';
-const READ_KEY = 'wsf_read';
+const FAV_KEY   = 'wsf_favorites';
+const READ_KEY  = 'wsf_read';
+const PREFS_KEY = 'wsf_prefs';
+
+function getPrefs() {
+    try { return JSON.parse(localStorage.getItem(PREFS_KEY) || '{"categories":{},"sources":{}}'); }
+    catch { return { categories: {}, sources: {} }; }
+}
+
+function learnFromRead(h) {
+    const prefs = getPrefs();
+    const cat = (h.category || '').toLowerCase();
+    const src = (h.source   || '').toLowerCase();
+    if (cat) prefs.categories[cat] = (prefs.categories[cat] || 0) + 1;
+    if (src) prefs.sources[src]    = (prefs.sources[src]    || 0) + 1;
+    try { localStorage.setItem(PREFS_KEY, JSON.stringify(prefs)); } catch {}
+}
 
 function getReadIds() {
     try { return new Set(JSON.parse(localStorage.getItem(READ_KEY) || '[]')); }
@@ -424,11 +439,43 @@ const CATEGORY_MAP = {
     'nature': 'nature',
 };
 
+function applyForYou() {
+    const prefs = getPrefs();
+    const hasPrefs = Object.keys(prefs.categories).length > 0 || Object.keys(prefs.sources).length > 0;
+    const emptyEl = document.getElementById('foryou-empty');
+
+    if (!hasPrefs) {
+        document.querySelectorAll('.card').forEach(c => {
+            if (!c.closest('#fav-section')) c.style.display = 'none';
+        });
+        emptyEl.classList.remove('hidden');
+        return;
+    }
+
+    emptyEl.classList.add('hidden');
+    const feed = document.getElementById('feed');
+    const sentinel = document.getElementById('sentinel');
+    const cards = [...document.querySelectorAll('.card')].filter(c => !c.closest('#fav-section'));
+
+    const scored = cards.map(c => {
+        const score = (prefs.categories[c.dataset.category] || 0) * 2
+                    + (prefs.sources[c.dataset.source]       || 0);
+        return { c, score };
+    }).filter(x => x.score > 0).sort((a, b) => b.score - a.score);
+
+    const visible = new Set(scored.map(x => x.c));
+    cards.forEach(c => { c.style.display = visible.has(c) ? '' : 'none'; });
+    scored.forEach(({ c }) => feed.insertBefore(c, sentinel));
+    updateTopCard();
+}
+
 function applyCategory(cat) {
     activeCategory = cat;
     document.querySelectorAll('.cat-tab').forEach(b =>
         b.classList.toggle('active', b.dataset.cat === cat)
     );
+    document.getElementById('foryou-empty').classList.add('hidden');
+    if (cat === 'foryou') { applyForYou(); return; }
     const filter = CATEGORY_MAP[cat];
     document.querySelectorAll('.card').forEach(c => {
         if (!filter) { c.style.display = ''; return; }
@@ -489,6 +536,7 @@ function _cleanDesc(raw) {
 function openModal(h) {
     track('article_click', { title: h.title, source: h.source, lang: currentLang });
     markRead(h.id);
+    learnFromRead(h);
     document.getElementById('modal-source').textContent = h.source;
     document.getElementById('modal-age').textContent    = timeAgo(h.published);
     document.getElementById('modal-title').textContent  = h.title;

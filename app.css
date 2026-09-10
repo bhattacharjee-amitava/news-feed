@@ -270,6 +270,26 @@ html, body {
   border-color: var(--accent);
   color: #080c12;
 }
+.cat-foryou { color: #f5c518; border-color: #f5c518; }
+.cat-foryou.active { background: #f5c518; border-color: #f5c518; color: #080c12; }
+#foryou-empty {
+  padding: 48px 24px;
+  text-align: center;
+  color: var(--secondary);
+  font-size: 15px;
+  line-height: 1.6;
+}
+#foryou-empty::before {
+  content: '★';
+  display: block;
+  font-size: 32px;
+  color: #f5c518;
+  margin-bottom: 12px;
+}
+#foryou-empty::after {
+  content: 'Open a few articles — your personalised feed will appear here.';
+  display: block;
+}
 
 /* ── Star / Favourites ────────────────────────────────────── */
 .star-btn {

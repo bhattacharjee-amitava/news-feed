@@ -117,7 +117,7 @@ function makeCard(h) {
     div.dataset.title    = (h.title    || '').toLowerCase();
     div.dataset.category = (h.category || '').toLowerCase();
     const imgHtml = h.image
-        ? `<img class="card-img" src="${esc(h.image)}" alt="" loading="lazy" onerror="this.remove()">`
+        ? `<img class="card-img" src="${esc(h.image)}" alt="" loading="lazy" onerror="this.remove()" onload="if(this.naturalWidth<200||this.naturalHeight<120)this.remove()">`
         : '';
     div.innerHTML = `
       <div class="card-meta">

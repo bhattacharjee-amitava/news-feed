@@ -275,7 +275,11 @@ const observer = new IntersectionObserver(entries => {
 // ── Fetch ──────────────────────────────────────────────────
 
 async function fetchHeadlines(q) {
-    const base = q ? `/api/headlines?q=${encodeURIComponent(q)}` : `/api/headlines?lang=${currentLang}`;
+    const base = q
+        ? `/api/headlines?q=${encodeURIComponent(q)}`
+        : activeCountry
+            ? `/api/headlines?country=${encodeURIComponent(activeCountry)}`
+            : `/api/headlines?lang=${currentLang}`;
     const url  = base;
     setStatus(q ? `Searching "${q}"…` : 'Fetching…');
     try {
@@ -874,7 +878,7 @@ function closeCountrySheet() {
     document.getElementById('country-overlay').classList.add('hidden');
 }
 
-async function switchCountry(code) {
+function switchCountry(code) {
     vibrate(8);
     closeCountrySheet();
     activeCountry = code;
@@ -884,22 +888,7 @@ async function switchCountry(code) {
     document.getElementById('trending-bar').classList.add('hidden');
     document.getElementById('country-btn').textContent = code === null ? '🌍' : (COUNTRY_NAMES[code]?.slice(0, 4) || '🌍');
     showSkeleton();
-    setStatus(`Fetching ${COUNTRY_NAMES[code] || code} news…`);
-    try {
-        const res  = await fetch(`/api/headlines?country=${encodeURIComponent(code)}`);
-        const data = await res.json();
-        const cutoff = Date.now() - MAX_AGE_MS;
-        const fresh = data.filter(h => new Date(h.published).getTime() > cutoff);
-        fresh.forEach(h => allIds.add(h.id));
-        fetchCount++;
-        pending.push(...fresh);
-        if (pending.length) {
-            deliverBatch();
-            observer.observe(document.getElementById('sentinel'));
-        }
-    } catch {
-        setStatus('Fetch error — will retry');
-    }
+    fetchHeadlines();
 }
 
 document.getElementById('country-btn').addEventListener('click', openCountrySheet);

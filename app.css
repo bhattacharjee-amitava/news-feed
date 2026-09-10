@@ -291,6 +291,86 @@ html, body {
   display: block;
 }
 
+/* ── Trending bar (#8) ────────────────────────────────────── */
+#trending-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  border-bottom: 0.5px solid var(--border);
+  background: var(--bg);
+}
+#trending-bar::-webkit-scrollbar { display: none; }
+#trending-bar.hidden { display: none; }
+.trend-label {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  text-transform: uppercase;
+  flex-shrink: 0;
+  font-family: ui-monospace, monospace;
+}
+.trend-chip {
+  flex-shrink: 0;
+  background: none;
+  border: 0.5px solid var(--muted);
+  border-radius: 12px;
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  cursor: pointer;
+  white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+  text-transform: capitalize;
+}
+.trend-chip:active { background: var(--border); }
+
+/* ── Modal summary & related (#7 #9) ─────────────────────── */
+.modal-section-label {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  text-transform: uppercase;
+  font-family: ui-monospace, monospace;
+  margin-bottom: 6px;
+}
+#modal-summary-wrap {
+  margin-bottom: 14px;
+}
+#modal-related {
+  margin-bottom: 14px;
+  border-top: 0.5px solid var(--border);
+  padding-top: 12px;
+}
+.related-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 0;
+  border-bottom: 0.5px solid var(--border);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.related-item:last-child { border-bottom: none; }
+.related-item:active { opacity: 0.7; }
+.related-source {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.related-title {
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.4;
+}
+
 /* ── Star / Favourites ────────────────────────────────────── */
 .star-btn {
   background: none;

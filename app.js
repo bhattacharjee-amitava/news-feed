@@ -6,6 +6,7 @@ const MAX_AGE_MS = 14 * 86_400_000;
 
 let allIds       = new Set();
 let displayedIds = new Set();
+const headlineMap = new Map();
 let pending      = [];
 let searchActive = false;
 let fetchCount   = 0;
@@ -143,6 +144,7 @@ function makeCard(h) {
     const starred  = isFav(h.id);
     const div      = document.createElement('div');
     div.className      = getReadIds().has(h.id) ? 'card read' : 'card';
+    headlineMap.set(h.id, h);
     div.dataset.id     = h.id;
     div.dataset.source   = (h.source   || '').toLowerCase();
     div.dataset.title    = (h.title    || '').toLowerCase();
@@ -197,6 +199,7 @@ function renderBatch(batch, prepend = false, live = false) {
     } else if (activeCategory !== 'all') {
         applyCategory(activeCategory);
     }
+    renderTrending();
     updateTopCard();
     setStatus(`Last fetch: ${new Date().toLocaleTimeString()}`);
 }
@@ -524,6 +527,84 @@ document.addEventListener('click', () =>
     document.getElementById('lang-dropdown').classList.add('hidden')
 );
 
+// ── #7 Article summary ─────────────────────────────────────
+
+function _summarize(raw) {
+    if (!raw) return '';
+    const d = document.createElement('div');
+    d.innerHTML = raw;
+    const text = (d.textContent || d.innerText || '').replace(/\s+/g, ' ').trim();
+    const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
+    return sentences.slice(0, 3).join(' ').trim();
+}
+
+// ── #8 Trending topics ──────────────────────────────────────
+
+const _STOP = new Set([
+    'the','a','an','and','or','but','in','on','at','to','for','of','with','is',
+    'are','was','were','has','have','had','be','been','being','by','from','as',
+    'it','its','this','that','these','those','he','she','they','we','you','i',
+    'my','his','her','their','our','your','will','would','could','should','may',
+    'might','can','do','does','did','not','no','nor','so','yet','both','either',
+    'neither','than','then','when','where','who','which','how','what','why',
+    'after','before','since','while','new','says','said','over','more','less',
+    'also','just','up','out','into','about','through','during','after','amid',
+]);
+
+function computeTrending() {
+    const freq = {};
+    document.querySelectorAll('.card').forEach(c => {
+        (c.dataset.title || '').toLowerCase().split(/\W+/).forEach(w => {
+            if (w.length < 4 || _STOP.has(w)) return;
+            freq[w] = (freq[w] || 0) + 1;
+        });
+    });
+    return Object.entries(freq)
+        .filter(([, n]) => n >= 2)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 8)
+        .map(([w]) => w);
+}
+
+function renderTrending() {
+    const words = computeTrending();
+    const bar = document.getElementById('trending-bar');
+    if (!words.length) { bar.classList.add('hidden'); return; }
+    bar.innerHTML = '<span class="trend-label">Trending</span>'
+        + words.map(w => `<button class="trend-chip">${esc(w)}</button>`).join('');
+    bar.classList.remove('hidden');
+    bar.querySelectorAll('.trend-chip').forEach(btn => {
+        btn.addEventListener('click', () => {
+            track('trending_click', { word: btn.textContent });
+            applyFilter(btn.textContent);
+        });
+    });
+}
+
+// ── #9 Related articles ─────────────────────────────────────
+
+function findRelated(h) {
+    const titleWords = new Set(
+        (h.title || '').toLowerCase().split(/\W+/).filter(w => w.length >= 4 && !_STOP.has(w))
+    );
+    const hCat = (h.category || '').toLowerCase();
+    return [...document.querySelectorAll('.card:not(#fav-section .card)')]
+        .filter(c => c.dataset.id !== h.id && c.style.display !== 'none')
+        .map(c => {
+            let score = 0;
+            if (c.dataset.category === hCat) score += 3;
+            (c.dataset.title || '').toLowerCase().split(/\W+/).forEach(w => {
+                if (titleWords.has(w)) score++;
+            });
+            return { id: c.dataset.id, score };
+        })
+        .filter(x => x.score > 0)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 3)
+        .map(x => headlineMap.get(x.id))
+        .filter(Boolean);
+}
+
 // ── Modal ──────────────────────────────────────────────────
 
 function _cleanDesc(raw) {
@@ -543,9 +624,33 @@ function openModal(h) {
     const modalImg = document.getElementById('modal-img');
     if (h.image) { modalImg.src = h.image; modalImg.hidden = false; }
     else { modalImg.hidden = true; modalImg.src = ''; }
+    const summary = _summarize(h.description);
+    const summaryWrap = document.getElementById('modal-summary-wrap');
     const desc = document.getElementById('modal-desc');
-    desc.textContent   = h.description || '';
-    desc.style.display = h.description ? '' : 'none';
+    if (summary) {
+        desc.textContent = summary;
+        summaryWrap.hidden = false;
+    } else {
+        summaryWrap.hidden = true;
+    }
+
+    // Related articles (#9)
+    const related = findRelated(h);
+    const relWrap = document.getElementById('modal-related');
+    const relList = document.getElementById('modal-related-list');
+    if (related.length) {
+        relList.innerHTML = '';
+        related.forEach(r => {
+            const item = document.createElement('div');
+            item.className = 'related-item';
+            item.innerHTML = `<span class="related-source">${esc(r.source)}</span><span class="related-title">${esc(r.title)}</span>`;
+            item.addEventListener('click', () => openModal(r));
+            relList.appendChild(item);
+        });
+        relWrap.hidden = false;
+    } else {
+        relWrap.hidden = true;
+    }
     document.getElementById('modal-link').href = h.url;
     document.getElementById('modal-overlay').classList.remove('hidden');
     document.body.style.overflow = 'hidden';

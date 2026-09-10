@@ -1,4 +1,4 @@
-const SHELL_CACHE = 'wsf-shell-v2';
+const SHELL_CACHE = 'wsf-shell-v3';
 const DATA_CACHE  = 'wsf-data-v1';
 const IMG_CACHE   = 'wsf-img-v1';
 const ALL_CACHES  = [SHELL_CACHE, DATA_CACHE, IMG_CACHE];

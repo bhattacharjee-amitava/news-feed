@@ -149,7 +149,7 @@ function makeCard(h) {
         e.stopPropagation();
         toggleFav(h, e.currentTarget);
     });
-    div.addEventListener('click', () => openModal(h));
+    div.addEventListener('click', () => { div.classList.add('read'); openModal(h); });
     return div;
 }
 

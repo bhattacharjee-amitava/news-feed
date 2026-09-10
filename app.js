@@ -220,7 +220,18 @@ function makeCard(h) {
         vibrate(12);
         toggleFav(h, e.currentTarget);
     });
-    div.addEventListener('click', () => { vibrate(8); div.classList.add('read'); openModal(h); });
+    div.addEventListener('click', () => {
+        vibrate(8);
+        if (div.classList.contains('read')) {
+            div.classList.remove('read');
+            const ids = getReadIds();
+            ids.delete(h.id);
+            try { localStorage.setItem(READ_KEY, JSON.stringify([...ids])); } catch {}
+        } else {
+            div.classList.add('read');
+        }
+        openModal(h);
+    });
     return div;
 }
 

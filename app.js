@@ -856,6 +856,61 @@ function showSkeleton() {
         </div>`).join('');
 }
 
+// ── #15 Country news ───────────────────────────────────────
+
+const COUNTRY_NAMES = {
+    US:'🇺🇸 United States', GB:'🇬🇧 United Kingdom', IN:'🇮🇳 India',
+    BD:'🇧🇩 Bangladesh',    AU:'🇦🇺 Australia',       CA:'🇨🇦 Canada',
+    DE:'🇩🇪 Germany',       FR:'🇫🇷 France',           JP:'🇯🇵 Japan',
+    BR:'🇧🇷 Brazil',
+};
+let activeCountry = null;
+
+function openCountrySheet() {
+    vibrate(6);
+    document.getElementById('country-overlay').classList.remove('hidden');
+}
+function closeCountrySheet() {
+    document.getElementById('country-overlay').classList.add('hidden');
+}
+
+async function switchCountry(code) {
+    vibrate(8);
+    closeCountrySheet();
+    activeCountry = code;
+    allIds.clear(); displayedIds.clear();
+    pending = []; fetchCount = 0; activeFilter = '';
+    document.getElementById('feed').querySelectorAll('.card').forEach(c => c.remove());
+    document.getElementById('trending-bar').classList.add('hidden');
+    document.getElementById('country-btn').textContent = code === null ? '🌍' : (COUNTRY_NAMES[code]?.slice(0, 4) || '🌍');
+    showSkeleton();
+    setStatus(`Fetching ${COUNTRY_NAMES[code] || code} news…`);
+    try {
+        const res  = await fetch(`/api/headlines?country=${encodeURIComponent(code)}`);
+        const data = await res.json();
+        const cutoff = Date.now() - MAX_AGE_MS;
+        const fresh = data.filter(h => new Date(h.published).getTime() > cutoff);
+        fresh.forEach(h => allIds.add(h.id));
+        fetchCount++;
+        pending.push(...fresh);
+        if (pending.length) {
+            deliverBatch();
+            observer.observe(document.getElementById('sentinel'));
+        }
+    } catch {
+        setStatus('Fetch error — will retry');
+    }
+}
+
+document.getElementById('country-btn').addEventListener('click', openCountrySheet);
+document.getElementById('country-close').addEventListener('click', closeCountrySheet);
+document.getElementById('country-overlay').addEventListener('click', e => {
+    if (e.target === document.getElementById('country-overlay')) closeCountrySheet();
+});
+document.querySelectorAll('.country-btn').forEach(btn => {
+    btn.addEventListener('click', () => switchCountry(btn.dataset.code));
+});
+
 // ── Boot ───────────────────────────────────────────────────
 
 // Apply saved theme

@@ -450,7 +450,21 @@ BN_SOURCES = [
     {"name": "Prothom Alo",       "url": "https://www.prothomalo.com/feed/",                                "category": "GEO-POLITICAL", "authority": 9},
 ]
 
+COUNTRY_SOURCES: dict[str, list] = {
+    'US': [{"name": "Google News US",  "url": "https://news.google.com/rss?hl=en-US&gl=US&ceid=US:en",        "category": "GEO-POLITICAL", "authority": 10}],
+    'GB': [{"name": "Google News UK",  "url": "https://news.google.com/rss?hl=en-GB&gl=GB&ceid=GB:en",        "category": "GEO-POLITICAL", "authority": 10}],
+    'IN': [{"name": "Google News IN",  "url": "https://news.google.com/rss?hl=en-IN&gl=IN&ceid=IN:en",        "category": "GEO-POLITICAL", "authority": 10}],
+    'BD': [{"name": "Google News BD",  "url": "https://news.google.com/rss?hl=bn&gl=BD&ceid=BD:bn",           "category": "GEO-POLITICAL", "authority": 10}],
+    'AU': [{"name": "Google News AU",  "url": "https://news.google.com/rss?hl=en-AU&gl=AU&ceid=AU:en",        "category": "GEO-POLITICAL", "authority": 10}],
+    'CA': [{"name": "Google News CA",  "url": "https://news.google.com/rss?hl=en-CA&gl=CA&ceid=CA:en",        "category": "GEO-POLITICAL", "authority": 10}],
+    'DE': [{"name": "Google News DE",  "url": "https://news.google.com/rss?hl=de&gl=DE&ceid=DE:de",           "category": "GEO-POLITICAL", "authority": 10}],
+    'FR': [{"name": "Google News FR",  "url": "https://news.google.com/rss?hl=fr&gl=FR&ceid=FR:fr",           "category": "GEO-POLITICAL", "authority": 10}],
+    'JP': [{"name": "Google News JP",  "url": "https://news.google.com/rss?hl=ja&gl=JP&ceid=JP:ja",           "category": "GEO-POLITICAL", "authority": 10}],
+    'BR': [{"name": "Google News BR",  "url": "https://news.google.com/rss?hl=pt-BR&gl=BR&ceid=BR:pt-419",   "category": "GEO-POLITICAL", "authority": 10}],
+}
+
 _cache: dict = {'en': {'ts': 0.0, 'data': []}, 'bn': {'ts': 0.0, 'data': []}}
+_country_cache: dict = {}
 CACHE_TTL = 60
 
 def fetch_all_cached(lang: str = 'en') -> list:
@@ -461,6 +475,19 @@ def fetch_all_cached(lang: str = 'en') -> list:
     sources = BN_SOURCES if lang == 'bn' else SOURCES
     req_t, global_t = (BN_TIMEOUT, 15) if lang == 'bn' else (TIMEOUT, 8)
     data = fetch_all(sources, req_timeout=req_t, global_timeout=global_t)
+    c['ts'] = now
+    c['data'] = data
+    return data
+
+def fetch_country_cached(country: str) -> list:
+    now = time.time()
+    sources = COUNTRY_SOURCES.get(country.upper())
+    if not sources:
+        return []
+    c = _country_cache.setdefault(country, {'ts': 0.0, 'data': []})
+    if c['data'] and (now - c['ts']) < CACHE_TTL:
+        return c['data']
+    data = fetch_all(sources, req_timeout=TIMEOUT, global_timeout=8)
     c['ts'] = now
     c['data'] = data
     return data
@@ -552,9 +579,15 @@ class handler(BaseHTTPRequestHandler):
 
         if p == '/api/headlines':
             qs   = parse_qs(parsed.query)
-            q    = (qs.get('q') or [None])[0]
-            lang = (qs.get('lang') or ['en'])[0]
-            data = search_news(q) if q else fetch_all_cached(lang)
+            q       = (qs.get('q')       or [None])[0]
+            lang    = (qs.get('lang')    or ['en'])[0]
+            country = (qs.get('country') or [None])[0]
+            if q:
+                data = search_news(q)
+            elif country:
+                data = fetch_country_cached(country)
+            else:
+                data = fetch_all_cached(lang)
             body = json.dumps(data, default=str).encode()
             self.send_response(200)
             self.send_header('Content-Type',   'application/json')

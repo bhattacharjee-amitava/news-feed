@@ -15,9 +15,11 @@ let currentLang  = 'en';
 
 // ── Favourites ─────────────────────────────────────────────
 
-const FAV_KEY   = 'wsf_favorites';
-const READ_KEY  = 'wsf_read';
-const PREFS_KEY = 'wsf_prefs';
+const FAV_KEY        = 'wsf_favorites';
+const READ_KEY       = 'wsf_read';
+const PREFS_KEY      = 'wsf_prefs';
+const SEARCH_HIST_KEY = 'wsf_search_hist';
+const THEME_KEY      = 'wsf_theme';
 
 function getPrefs() {
     try { return JSON.parse(localStorage.getItem(PREFS_KEY) || '{"categories":{},"sources":{}}'); }
@@ -31,6 +33,57 @@ function learnFromRead(h) {
     if (cat) prefs.categories[cat] = (prefs.categories[cat] || 0) + 1;
     if (src) prefs.sources[src]    = (prefs.sources[src]    || 0) + 1;
     try { localStorage.setItem(PREFS_KEY, JSON.stringify(prefs)); } catch {}
+}
+
+// ── #13 Haptic feedback ────────────────────────────────────
+function vibrate(ms = 8) {
+    try { navigator.vibrate?.(ms); } catch {}
+}
+
+// ── #11 Search history ─────────────────────────────────────
+function getSearchHistory() {
+    try { return JSON.parse(localStorage.getItem(SEARCH_HIST_KEY) || '[]'); }
+    catch { return []; }
+}
+function saveToSearchHistory(q) {
+    if (!q) return;
+    let hist = getSearchHistory().filter(x => x !== q);
+    hist.unshift(q);
+    hist = hist.slice(0, 8);
+    try { localStorage.setItem(SEARCH_HIST_KEY, JSON.stringify(hist)); } catch {}
+}
+function renderSearchHistory() {
+    const hist = getSearchHistory();
+    const el = document.getElementById('search-history');
+    if (!hist.length) { el.classList.add('hidden'); return; }
+    el.innerHTML = hist.map(q =>
+        `<button class="hist-chip">${esc(q)}</button>`
+    ).join('') + `<button class="hist-clear">Clear</button>`;
+    el.classList.remove('hidden');
+    el.querySelectorAll('.hist-chip').forEach(btn => {
+        btn.addEventListener('click', () => {
+            vibrate(6);
+            document.getElementById('search-input').value = btn.textContent;
+            applyFilter(btn.textContent);
+            el.classList.add('hidden');
+        });
+    });
+    el.querySelector('.hist-clear').addEventListener('click', () => {
+        try { localStorage.removeItem(SEARCH_HIST_KEY); } catch {}
+        el.classList.add('hidden');
+    });
+}
+
+// ── #14 Theme toggle ───────────────────────────────────────
+function applyTheme(theme) {
+    document.documentElement.dataset.theme = theme;
+    document.getElementById('theme-toggle').textContent = theme === 'light' ? '🌙' : '☀️';
+    try { localStorage.setItem(THEME_KEY, theme); } catch {}
+}
+function toggleTheme() {
+    vibrate(6);
+    const current = document.documentElement.dataset.theme || 'dark';
+    applyTheme(current === 'dark' ? 'light' : 'dark');
 }
 
 function getReadIds() {
@@ -164,9 +217,10 @@ function makeCard(h) {
       <div class="score-bar"><div class="score-fill" style="width:${score}%"></div></div>`;
     div.querySelector('.star-btn').addEventListener('click', e => {
         e.stopPropagation();
+        vibrate(12);
         toggleFav(h, e.currentTarget);
     });
-    div.addEventListener('click', () => { div.classList.add('read'); openModal(h); });
+    div.addEventListener('click', () => { vibrate(8); div.classList.add('read'); openModal(h); });
     return div;
 }
 
@@ -365,11 +419,13 @@ function openSearch() {
     inp.value = activeFilter;
     inp.focus();
     inp.select();
+    if (!activeFilter) renderSearchHistory();
 }
 
 function closeSearch(keepFilter = false) {
     searchActive = false;
     document.getElementById('search-bar').classList.add('hidden');
+    document.getElementById('search-history').classList.add('hidden');
     document.getElementById('btn-search').classList.remove('active');
     document.getElementById('search-trigger').classList.remove('active');
     if (!keepFilter) {
@@ -390,11 +446,15 @@ document.getElementById('search-trigger').addEventListener('click', () => {
         document.getElementById('search-trigger').classList.add('active');
     }
 });
-document.getElementById('search-input').addEventListener('input',  e => applyFilter(e.target.value));
+document.getElementById('search-input').addEventListener('input', e => {
+    const v = e.target.value;
+    applyFilter(v);
+    document.getElementById('search-history').classList.toggle('hidden', v.length > 0);
+});
 document.getElementById('search-input').addEventListener('keydown', e => {
     if (e.key === 'Enter') {
         const q = e.target.value.trim();
-        if (q) track('search', { query: q, lang: currentLang });
+        if (q) { saveToSearchHistory(q); track('search', { query: q, lang: currentLang }); }
         closeSearch(true);
     }
     if (e.key === 'Escape') closeSearch();
@@ -486,7 +546,7 @@ function applyCategory(cat) {
 }
 
 document.querySelectorAll('.cat-tab').forEach(btn =>
-    btn.addEventListener('click', () => applyCategory(btn.dataset.cat))
+    btn.addEventListener('click', () => { vibrate(6); applyCategory(btn.dataset.cat); })
 );
 
 // ── Language switcher ──────────────────────────────────────
@@ -573,6 +633,7 @@ function renderTrending() {
     bar.classList.remove('hidden');
     bar.querySelectorAll('.trend-chip').forEach(btn => {
         btn.addEventListener('click', () => {
+            vibrate(6);
             track('trending_click', { word: btn.textContent });
             applyFilter(btn.textContent);
         });
@@ -642,7 +703,7 @@ function openModal(h) {
             const item = document.createElement('div');
             item.className = 'related-item';
             item.innerHTML = `<span class="related-source">${esc(r.source)}</span><span class="related-title">${esc(r.title)}</span>`;
-            item.addEventListener('click', () => openModal(r));
+            item.addEventListener('click', () => { vibrate(8); openModal(r); });
             relList.appendChild(item);
         });
         relWrap.hidden = false;
@@ -662,6 +723,7 @@ function closeModal() {
 document.getElementById('modal-close').addEventListener('click', closeModal);
 
 document.getElementById('modal-share').addEventListener('click', async () => {
+    vibrate(8);
     const title = document.getElementById('modal-title').textContent;
     const url   = document.getElementById('modal-link').href;
     if (navigator.share) {
@@ -780,8 +842,30 @@ document.addEventListener('scroll', () => requestAnimationFrame(updateTopCard), 
     });
 })();
 
+// ── #12 Skeleton loading ───────────────────────────────────
+
+function showSkeleton() {
+    const loading = document.getElementById('loading');
+    if (!loading) return;
+    loading.innerHTML = Array(5).fill(0).map(() => `
+        <div class="skeleton-card">
+          <div class="sk sk-meta"></div>
+          <div class="sk sk-img"></div>
+          <div class="sk sk-line long"></div>
+          <div class="sk sk-line med"></div>
+        </div>`).join('');
+}
+
 // ── Boot ───────────────────────────────────────────────────
 
+// Apply saved theme
+(function () {
+    const saved = localStorage.getItem(THEME_KEY) || 'dark';
+    applyTheme(saved);
+    document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
+})();
+
+showSkeleton();
 renderFavSection();
 fetchHeadlines();
 setInterval(fetchHeadlines, POLL_MS);

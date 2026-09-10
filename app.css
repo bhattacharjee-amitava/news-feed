@@ -111,18 +111,30 @@ html, body {
 }
 #search-not-found.hidden { display: none; }
 
-/* ── Loading ──────────────────────────────────────────────── */
-#loading {
-  padding: 48px 24px;
-  text-align: center;
-  color: var(--secondary);
-  font-size: 13px;
-  font-family: ui-monospace, monospace;
-  letter-spacing: 0.04em;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+/* ── Loading / Skeleton (#12) ─────────────────────────────── */
+#loading { padding: 8px 0; }
+@keyframes shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position:  400px 0; }
 }
+.skeleton-card {
+  margin: 10px 14px;
+  background: var(--card);
+  border: 0.5px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+}
+.sk {
+  border-radius: 6px;
+  background: linear-gradient(90deg, var(--border) 25%, var(--card) 50%, var(--border) 75%);
+  background-size: 800px 100%;
+  animation: shimmer 1.4s infinite linear;
+}
+.sk-meta  { height: 10px; width: 60%; margin-bottom: 12px; }
+.sk-img   { height: 120px; width: 100%; margin-bottom: 12px; }
+.sk-line  { height: 12px; margin-bottom: 8px; }
+.sk-line.long { width: 90%; }
+.sk-line.med  { width: 65%; }
 .spinner {
   width: 24px; height: 24px;
   border: 2px solid var(--border);
@@ -207,6 +219,59 @@ html, body {
   border-radius: 1px;
   background: var(--accent);
   opacity: 0.45;
+}
+
+/* ── Search history (#11) ────────────────────────────────── */
+#search-history {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+#search-history.hidden { display: none; }
+.hist-chip {
+  background: var(--border);
+  border: none;
+  border-radius: 12px;
+  color: var(--text);
+  font-size: 12px;
+  padding: 4px 10px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.hist-clear {
+  background: none;
+  border: 0.5px solid var(--muted);
+  border-radius: 12px;
+  color: var(--muted);
+  font-size: 11px;
+  padding: 4px 10px;
+  cursor: pointer;
+  margin-left: auto;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ── Theme toggle (#14) ───────────────────────────────────── */
+.strip-theme {
+  background: none;
+  border: none;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 2px;
+  flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ── Light theme (#14) ────────────────────────────────────── */
+:root[data-theme="light"] {
+  --bg:        #f0f4f8;
+  --card:      #ffffff;
+  --border:    #ccd8e4;
+  --accent:    #00a887;
+  --text:      #0d1b2a;
+  --muted:     #6a8fa8;
+  --secondary: #4a6a7a;
 }
 
 /* ── Search bar ───────────────────────────────────────────── */

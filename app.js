@@ -871,6 +871,65 @@ function showSkeleton() {
         </div>`).join('');
 }
 
+// ── Feedback ───────────────────────────────────────────────
+
+document.getElementById('feedback-btn').addEventListener('click', () => {
+    vibrate(6);
+    document.getElementById('feedback-overlay').classList.remove('hidden');
+    document.getElementById('feedback-email').focus();
+});
+
+function closeFeedback() {
+    document.getElementById('feedback-overlay').classList.add('hidden');
+    document.getElementById('feedback-email').value = '';
+    document.getElementById('feedback-message').value = '';
+    document.getElementById('feedback-status').classList.add('hidden');
+}
+
+document.getElementById('feedback-cancel').addEventListener('click', closeFeedback);
+document.getElementById('feedback-overlay').addEventListener('click', e => {
+    if (e.target === document.getElementById('feedback-overlay')) closeFeedback();
+});
+
+document.getElementById('feedback-submit').addEventListener('click', async () => {
+    const email   = document.getElementById('feedback-email').value.trim();
+    const message = document.getElementById('feedback-message').value.trim();
+    const status  = document.getElementById('feedback-status');
+
+    if (!email || !message) {
+        status.textContent = 'Please fill in both fields.';
+        status.className = 'feedback-error';
+        return;
+    }
+
+    const btn = document.getElementById('feedback-submit');
+    btn.disabled = true;
+    btn.textContent = 'Sending…';
+
+    try {
+        const res = await fetch('https://formspree.io/f/xoeqybao', {
+            method: 'POST',
+            headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, message }),
+        });
+        if (res.ok) {
+            status.textContent = 'Thank you! Feedback sent.';
+            status.className = 'feedback-ok';
+            track('feedback_sent', {});
+            setTimeout(closeFeedback, 2000);
+        } else {
+            status.textContent = 'Failed to send. Please try again.';
+            status.className = 'feedback-error';
+        }
+    } catch {
+        status.textContent = 'Network error. Please try again.';
+        status.className = 'feedback-error';
+    }
+
+    btn.disabled = false;
+    btn.textContent = 'Send';
+});
+
 // ── #15 Country news ───────────────────────────────────────
 
 const COUNTRY_NAMES = {

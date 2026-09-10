@@ -61,6 +61,7 @@
 
 <div id="cat-bar">
   <button class="cat-tab active" data-cat="all">All</button>
+  <button id="feedback-btn" class="cat-tab cat-feedback">Feedback</button>
   <button class="cat-tab cat-foryou" data-cat="foryou">★ For You</button>
   <button id="search-trigger" class="cat-search-btn" aria-label="Search">&#9906;</button>
   <!-- <button class="cat-tab" data-cat="world">World</button> -->
@@ -76,6 +77,18 @@
   <!-- <button class="cat-tab" data-cat="explore">Explore</button> -->
   <button class="cat-tab" data-cat="nature">Nature</button>
   <button id="country-btn" class="cat-tab cat-country">🌍</button>
+</div>
+
+<!-- Feedback modal -->
+<div id="feedback-overlay" class="hidden">
+  <div id="feedback-modal">
+    <div id="feedback-title">Send Feedback</div>
+    <input id="feedback-email" type="email" placeholder="Your email address" autocomplete="email">
+    <textarea id="feedback-message" placeholder="Your feedback…" rows="4"></textarea>
+    <button id="feedback-submit">Send</button>
+    <button id="feedback-cancel">Cancel</button>
+    <div id="feedback-status" class="hidden"></div>
+  </div>
 </div>
 
 <!-- Country picker sheet -->

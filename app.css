@@ -335,8 +335,79 @@ html, body {
   border-color: var(--accent);
   color: #080c12;
 }
+.cat-feedback { color: #00c9a7; border-color: #00c9a7; }
 .cat-foryou { color: #f5c518; border-color: #f5c518; }
 .cat-foryou.active { background: #f5c518; border-color: #f5c518; color: #080c12; }
+
+/* ── Feedback modal ───────────────────────────────────────── */
+#feedback-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+#feedback-overlay.hidden { display: none; }
+#feedback-modal {
+  background: #111a28;
+  border: 0.5px solid var(--border);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 420px;
+  padding: 24px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+#feedback-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+#feedback-email,
+#feedback-message {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 14px;
+  padding: 10px 12px;
+  font-family: -apple-system, sans-serif;
+  outline: none;
+  resize: none;
+}
+#feedback-email:focus,
+#feedback-message:focus { border-color: var(--accent); }
+#feedback-email::placeholder,
+#feedback-message::placeholder { color: var(--muted); }
+#feedback-submit {
+  background: var(--accent);
+  border: none;
+  border-radius: 10px;
+  color: #080c12;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 11px;
+  cursor: pointer;
+}
+#feedback-submit:disabled { opacity: 0.6; }
+#feedback-cancel {
+  background: none;
+  border: 0.5px solid var(--muted);
+  border-radius: 10px;
+  color: var(--muted);
+  font-size: 14px;
+  padding: 10px;
+  cursor: pointer;
+}
+.feedback-ok    { color: var(--accent); font-size: 13px; text-align: center; }
+.feedback-error { color: #ff6b6b;       font-size: 13px; text-align: center; }
+#feedback-status.hidden { display: none; }
 .cat-country { font-size: 16px; padding: 2px 10px; }
 
 /* ── Country picker sheet (#15) ───────────────────────────── */

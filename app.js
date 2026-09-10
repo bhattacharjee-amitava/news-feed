@@ -14,7 +14,23 @@ let currentLang  = 'en';
 
 // ── Favourites ─────────────────────────────────────────────
 
-const FAV_KEY = 'wsf_favorites';
+const FAV_KEY  = 'wsf_favorites';
+const READ_KEY = 'wsf_read';
+
+function getReadIds() {
+    try { return new Set(JSON.parse(localStorage.getItem(READ_KEY) || '[]')); }
+    catch { return new Set(); }
+}
+
+function markRead(id) {
+    const ids = getReadIds();
+    if (ids.has(id)) return;
+    ids.add(id);
+    // Keep only the last 500 to avoid unbounded growth
+    const trimmed = [...ids].slice(-500);
+    try { localStorage.setItem(READ_KEY, JSON.stringify(trimmed)); } catch {}
+    document.querySelectorAll(`.card[data-id="${id}"]`).forEach(c => c.classList.add('read'));
+}
 
 function getFavs() {
     try { return JSON.parse(localStorage.getItem(FAV_KEY) || '[]'); }
@@ -111,7 +127,7 @@ function makeCard(h) {
     const cross    = h.cross_source_count > 1 ? ` · +${h.cross_source_count - 1}` : '';
     const starred  = isFav(h.id);
     const div      = document.createElement('div');
-    div.className      = 'card';
+    div.className      = getReadIds().has(h.id) ? 'card read' : 'card';
     div.dataset.id     = h.id;
     div.dataset.source   = (h.source   || '').toLowerCase();
     div.dataset.title    = (h.title    || '').toLowerCase();
@@ -472,6 +488,7 @@ function _cleanDesc(raw) {
 
 function openModal(h) {
     track('article_click', { title: h.title, source: h.source, lang: currentLang });
+    markRead(h.id);
     document.getElementById('modal-source').textContent = h.source;
     document.getElementById('modal-age').textContent    = timeAgo(h.published);
     document.getElementById('modal-title').textContent  = h.title;

@@ -447,15 +447,13 @@ function applyForYou() {
     const hasPrefs = Object.keys(prefs.categories).length > 0 || Object.keys(prefs.sources).length > 0;
     const emptyEl = document.getElementById('foryou-empty');
 
+    emptyEl.classList.add('hidden');
     if (!hasPrefs) {
         document.querySelectorAll('.card').forEach(c => {
             if (!c.closest('#fav-section')) c.style.display = 'none';
         });
-        emptyEl.classList.remove('hidden');
         return;
     }
-
-    emptyEl.classList.add('hidden');
     const feed = document.getElementById('feed');
     const sentinel = document.getElementById('sentinel');
     const cards = [...document.querySelectorAll('.card')].filter(c => !c.closest('#fav-section'));

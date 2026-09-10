@@ -451,17 +451,32 @@ document.getElementById('search-trigger').addEventListener('click', () => {
     }
 });
 document.getElementById('search-input').addEventListener('input', e => {
-    const v = e.target.value;
-    applyFilter(v);
-    document.getElementById('search-history').classList.toggle('hidden', v.length > 0);
+    document.getElementById('search-history').classList.toggle('hidden', e.target.value.length > 0);
 });
 document.getElementById('search-input').addEventListener('keydown', e => {
     if (e.key === 'Enter') {
         const q = e.target.value.trim();
-        if (q) { saveToSearchHistory(q); track('search', { query: q, lang: currentLang }); }
-        closeSearch(true);
+        if (q) {
+            saveToSearchHistory(q);
+            track('search', { query: q, lang: currentLang });
+            closeSearch();
+            fetchHeadlines(q);
+        } else {
+            closeSearch();
+        }
     }
     if (e.key === 'Escape') closeSearch();
+});
+document.getElementById('search-input').addEventListener('search', e => {
+    const q = e.target.value.trim();
+    if (q) {
+        saveToSearchHistory(q);
+        track('search', { query: q, lang: currentLang });
+        closeSearch();
+        fetchHeadlines(q);
+    } else {
+        closeSearch();
+    }
 });
 
 // ── Live search ─────────────────────────────────────────────

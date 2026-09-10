@@ -8,9 +8,10 @@ let allIds       = new Set();
 let displayedIds = new Set();
 const headlineMap = new Map();
 let pending      = [];
-let searchActive = false;
-let fetchCount   = 0;
-let activeFilter = '';
+let searchActive        = false;
+let searchResultsActive = false;
+let fetchCount          = 0;
+let activeFilter        = '';
 let currentLang  = 'en';
 
 // ── Favourites ─────────────────────────────────────────────
@@ -289,8 +290,12 @@ async function fetchHeadlines(q) {
 
         if (q) {
             const fresh = data.filter(h => new Date(h.published).getTime() > cutoff);
+            // Clear feed and show ONLY search results
+            document.getElementById('feed').querySelectorAll('.card').forEach(c => c.remove());
+            allIds.clear(); displayedIds.clear(); pending = []; fetchCount = 0;
+            searchResultsActive = true;
             if (fresh.length) renderBatch(fresh);
-            setStatus(`${fresh.length} results for "${q}"`);
+            setStatus(`${fresh.length} result${fresh.length !== 1 ? 's' : ''} for "${q}" · tap a tab to resume`);
             closeSearch();
         } else {
             const novel = data.filter(h =>
@@ -565,7 +570,17 @@ function applyCategory(cat) {
 }
 
 document.querySelectorAll('.cat-tab').forEach(btn =>
-    btn.addEventListener('click', () => { vibrate(6); applyCategory(btn.dataset.cat); })
+    btn.addEventListener('click', () => {
+        vibrate(6);
+        if (searchResultsActive) {
+            searchResultsActive = false;
+            allIds.clear(); displayedIds.clear(); pending = []; fetchCount = 0;
+            document.getElementById('feed').querySelectorAll('.card').forEach(c => c.remove());
+            showSkeleton();
+            fetchHeadlines();
+        }
+        applyCategory(btn.dataset.cat);
+    })
 );
 
 // ── Language switcher ──────────────────────────────────────
@@ -986,7 +1001,7 @@ document.querySelectorAll('.country-btn').forEach(btn => {
 showSkeleton();
 renderFavSection();
 fetchHeadlines();
-setInterval(fetchHeadlines, POLL_MS);
+setInterval(() => { if (!searchResultsActive) fetchHeadlines(); }, POLL_MS);
 setTimeout(updateTopCard, 1000);
 setTimeout(updateTopCard, 3000);
 setTimeout(updateTopCard, 6000);

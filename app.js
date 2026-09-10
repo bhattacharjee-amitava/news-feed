@@ -492,6 +492,21 @@ function closeModal() {
 }
 
 document.getElementById('modal-close').addEventListener('click', closeModal);
+
+document.getElementById('modal-share').addEventListener('click', async () => {
+    const title = document.getElementById('modal-title').textContent;
+    const url   = document.getElementById('modal-link').href;
+    if (navigator.share) {
+        try { await navigator.share({ title, url }); } catch {}
+    } else {
+        try {
+            await navigator.clipboard.writeText(url);
+            const toast = document.getElementById('share-toast');
+            toast.classList.remove('hidden');
+            setTimeout(() => toast.classList.add('hidden'), 2000);
+        } catch {}
+    }
+});
 document.getElementById('modal-overlay').addEventListener('click', e => {
     if (e.target === document.getElementById('modal-overlay')) closeModal();
 });

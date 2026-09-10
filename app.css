@@ -187,13 +187,10 @@ html, body {
 }
 .card-img {
   width: 100%;
-  aspect-ratio: 16 / 9;
-  object-fit: cover;
-  object-position: top;
+  height: auto;
   border-radius: 6px;
   margin-bottom: 9px;
   display: block;
-  background: var(--border);
 }
 
 .score-bar {

@@ -196,7 +196,7 @@ function makeCard(h) {
     const cross    = h.cross_source_count > 1 ? ` · +${h.cross_source_count - 1}` : '';
     const starred  = isFav(h.id);
     const div      = document.createElement('div');
-    div.className      = getReadIds().has(h.id) ? 'card read' : 'card';
+    div.className      = 'card';
     headlineMap.set(h.id, h);
     div.dataset.id     = h.id;
     div.dataset.source   = (h.source   || '').toLowerCase();
@@ -220,7 +220,7 @@ function makeCard(h) {
         vibrate(12);
         toggleFav(h, e.currentTarget);
     });
-    div.addEventListener('click', () => { vibrate(8); div.classList.add('read'); openModal(h); });
+    div.addEventListener('click', () => { vibrate(8); openModal(h); });
     return div;
 }
 

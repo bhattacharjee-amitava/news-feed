@@ -396,24 +396,7 @@ html, body {
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
-#foryou-empty {
-  padding: 48px 24px;
-  text-align: center;
-  color: var(--secondary);
-  font-size: 15px;
-  line-height: 1.6;
-}
-#foryou-empty::before {
-  content: '★';
-  display: block;
-  font-size: 32px;
-  color: #f5c518;
-  margin-bottom: 12px;
-}
-#foryou-empty::after {
-  content: 'Open a few articles — your personalised feed will appear here.';
-  display: block;
-}
+#foryou-empty { display: none; }
 
 /* ── Trending bar (#8) ────────────────────────────────────── */
 #trending-bar {
